@@ -1,3 +1,6 @@
+install ethers.js ->
+	npm i ethers@5.7.2
+
 install Tailwind CSS ->
 	npm install -D tailwindcss
 	npx tailwindcss init
