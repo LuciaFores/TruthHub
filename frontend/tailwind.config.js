@@ -4,6 +4,9 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["synthwave"],
+  },
+  plugins: [require("@tailwindcss/typography"), require("daisyui")],
 }
 

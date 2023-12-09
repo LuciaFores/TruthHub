@@ -1,7 +1,7 @@
 function App() {
   return (
-    <div>
-      <button className="btn">Hello daisyUI</button>
+    <div data-theme='synthwave'>
+      <button className="btn btn-primary">Hello daisyUI</button>
     </div>
   );
 }
