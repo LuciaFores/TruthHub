@@ -1,0 +1,17 @@
+install Tailwind CSS ->
+	npm install -D tailwindcss
+	npx tailwindcss init
+
+install daisyUI ->
+	npm i -D daisyui@latest
+
+add daisyUI to 'tailwind.config.js' ->
+	module.exports = {
+  		//...
+  		plugins: [require("daisyui")],
+	}
+
+in the created React app replace 'App.css' with the following ->
+	@tailwind base;
+	@tailwind components;
+	@tailwind utilities;
