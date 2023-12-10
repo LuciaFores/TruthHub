@@ -1,5 +1,8 @@
-install ethers.js ->
-	npm i ethers@5.7.2
+to create a brand new app (with no conflicts due to a new version of webpack) ->
+	npx thirdweb create --app
+
+install thirdweb activeChains ->
+	npm install @thirdweb-dev/chains
 
 install Tailwind CSS ->
 	npm install -D tailwindcss
