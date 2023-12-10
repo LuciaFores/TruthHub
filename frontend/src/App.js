@@ -1,13 +1,16 @@
 import React from "react";
 
 import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+
 
 function App() {
-  return (
-    <div data-theme='synthwave'>
-      <Navbar/>
-    </div>
-  );
+	return (
+		<div data-theme='synthwave'>
+			<Navbar/>
+			<Home/>
+		</div>
+	);
 }
 
 export default App;

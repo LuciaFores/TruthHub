@@ -9,12 +9,12 @@ import "./index.css";
 const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(
-  <React.StrictMode>
-    <ThirdwebProvider
-      activeChain={Sepolia}
-      clientId={process.env.REACT_APP_TEMPLATE_CLIENT_ID}
-    >
-      <App />
-    </ThirdwebProvider>
-  </React.StrictMode>
+	<React.StrictMode>
+    	<ThirdwebProvider
+			activeChain={Sepolia}
+			clientId={process.env.REACT_APP_TEMPLATE_CLIENT_ID}
+    	>
+			<App />
+		</ThirdwebProvider>
+	</React.StrictMode>
 );
