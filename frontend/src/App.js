@@ -2,13 +2,14 @@ import React from "react";
 
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
+import Articles from "./pages/Articles";
 
 
 function App() {
 	return (
 		<div data-theme='synthwave'>
 			<Navbar/>
-			<Home/>
+			<Articles/>
 		</div>
 	);
 }
