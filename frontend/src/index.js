@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import { ThirdwebProvider } from "@thirdweb-dev/react";
+import { ThirdwebProvider, metamaskWallet } from "@thirdweb-dev/react";
 import { Sepolia } from "@thirdweb-dev/chains";
 import { NostrProvider } from "nostr-react";
 
@@ -23,6 +23,7 @@ root.render(
 			<ThirdwebProvider
 				activeChain={Sepolia}
 				clientId={process.env.REACT_APP_TEMPLATE_CLIENT_ID}
+				supportedWallets={[metamaskWallet()]}
 			>
 				<App />
 			</ThirdwebProvider>
