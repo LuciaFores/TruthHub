@@ -14,6 +14,8 @@ ridato lo stake + token di piattaforma, ad esempio si danno 100 token ogni 0.001
     - numero di upvote (int)
     - numero di downvote (int)
     - numero di votanti (= upvote + downvote) -> calcolabile
+    - soglia_minima_blocco (e.g. current_block_height + 4 giorni)
+    - soglia_massima_blocco (e.g. current_block_height + 1 settiman)
 - mapping event id di nostr (byte32) -> Articolo
 - mapping event id di nostr -> id articolo (forse)
 - mapping id articolo -> event id di nostr (forse)
@@ -33,9 +35,12 @@ MODIFICATORI
 Modificatore che controlla che l'utente che sta firmando la transazione abbia anche un account nostr, per fare ciò si
 controlla la mapping tra address ethereum e address nostr
 - openToVote
-Modificatore che controlla se una votazione è ancora aperta a ricevere voti
+Votazione aperta se
+numero_voti < soglia_minima_voti and current_block_height < soglia_massima_blocchi 
 - closeToVote
-Contrario di openToVote
+Votazione chiusa se 
+(numero_voti >= soglia_minima_voti and current_block_height >= soglia_minima_blocchi) or current_block_height >= soglia_massima_blocchi 
+  
 
 
 FUNZIONI
