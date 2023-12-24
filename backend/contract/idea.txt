@@ -2,7 +2,7 @@ VARIABILI
 - [immutabile] prezzo di voto (è il numero di ether che il sistema richiede per votare, viene ridato indietro o quando
 si raggiunge una soglia decisa dal sistema di voti - sarebbe un numero di voti per considerare valido il voto di maggioranza -
 o dopo una delta - in numero di blocchi - dal momento dell'apertura della votazione, al momento della restituzione viene
-ridato lo stake + token di piattaforma)
+ridato lo stake + token di piattaforma, ad esempio si danno 100 token ogni 0.001 ether)
 - [immutabile] prezzo di pubblicazione (funziona come sopra solo per pubblicare l'articolo)
 - mapping address ethereum -> address nostr
 - mapping address ethereum -> reputazione (float)
@@ -32,14 +32,45 @@ MODIFICATORI
 - onlyAuthor
 Modificatore che controlla che l'utente che sta firmando la transazione abbia anche un account nostr, per fare ciò si
 controlla la mapping tra address ethereum e address nostr
+- openToVote
+Modificatore che controlla se una votazione è ancora aperta a ricevere voti
+- closeToVote
+Contrario di openToVote
 
 
 FUNZIONI
 - pubblica_articolo onlyAuthor external payable
 Funzione che serve per creare un'istanza articolo nel contract, una volta creata l'istanza è automaticamente pronta a
 ricevere votazioni
-- vota external payable
+- vota openToVote external payable
 Funzione che serve per votare un articolo
 - link_nostr_address
 Prova crittografica va crittografata sia con la chiave privata di nostr sia con quella di ethereum (per evitare che qualcuno
 legga la mempool e rubi l'account creando una nuova transazione uguale che viene accettata prima)
+- claim_stake_reward closeToVote external (id articolo)
+La funzione va a buon fine se sei l'autore dell'articolo e la votazione è terminata con approvazione: in questo caso l'autore
+riceve una quantità di token proporzionali al valore dello stake + lo stake in ether che torna indietro + la somma degli stake
+della minoranza (downvote perché c'è stata approvazione) 
+Se la votazione termina con rifiuto e sei l'autore allora si perde tutto e si va a modificare la reputazione
+La funzione va a buon fine se sei uno dei reader che fa parte della maggioranza e la votazione è terminata con approvazione:
+in questo caso ogni reader ricevere una quantità di token proporzionale al valore dello stake + lo stake in ether che torna
+indietro 
+La funzione va a buon fine se sei uno dei reader che fa parte della maggioranza e la votazione è terminata con rifiuto:
+in questo caso ogni reader ricevere una quantità di token proporzionale al valore dello stake + lo stake in ether che torna
+indietro + considerando tutto lo stake dell'autore e della minoranza, una parte proporzionale al peso avuto sul voto
+Se sei un reader della minoranza in ogni caso (sia in caso di approvazione sia di rifiuto) si perde tutto e si modifica la
+reputazione 
+
+
+APPUNTI VARI
+- i reader fanno stake per votare
+- gli autori fanno stake per pubblicare un articolo nell'ecosistema
+- il prezzo di voto è di tanto minore di quello di pubblicazione (e.g. 0.001 e 0.01)
+- il peso del voto di un reader è calcolato con una formula che tiene in considerazione sia la reputazione sia 
+il numero di token di voto per boost (parte o tutti quelli posseduti da spendere dove si vuole, nel momento in cui
+questi verranno restituiti saranno nuovamente utilizzati per boostare)
+- i reader votano (funzione vota), gli author pubblicano (funzione pubblica_articolo), i reader possono diventare
+author (funzione link_nostr_address)
+- autore, reader
+- approvazione, rifiuto
+- maggioranza, minoranza
