@@ -1,0 +1,45 @@
+VARIABILI
+- [immutabile] prezzo di voto (è il numero di ether che il sistema richiede per votare, viene ridato indietro o quando
+si raggiunge una soglia decisa dal sistema di voti - sarebbe un numero di voti per considerare valido il voto di maggioranza -
+o dopo una delta - in numero di blocchi - dal momento dell'apertura della votazione, al momento della restituzione viene
+ridato lo stake + token di piattaforma)
+- [immutabile] prezzo di pubblicazione (funziona come sopra solo per pubblicare l'articolo)
+- mapping address ethereum -> address nostr
+- mapping address ethereum -> reputazione (float)
+- struct Articolo:
+    - id articolo (int progressivo utile per gli ERC1155)
+    - event id nostr dell'articolo (hex che va storato in un byte32 per controllare che non venga creata una nuova istanza di
+    articolo solo se non esiste già tra quelli registrati)
+    - address ethereum
+    - numero di upvote (int)
+    - numero di downvote (int)
+    - numero di votanti (= upvote + downvote) -> calcolabile
+- mapping event id di nostr (byte32) -> Articolo
+- mapping event id di nostr -> id articolo (forse)
+- mapping id articolo -> event id di nostr (forse)
+
+
+VINCOLI LATO FRONT-END
+- Si può istanziare un articolo (salvarlo nel contract -> mi permette di avere finanziamenti) solo se l'event id esiste
+su nostr e l'autore dell'event è quello linkato all'account che sta facendo la transazione
+
+
+VINCOLI LATO BACK-END
+- Non istanziare due articoli con event id nostr uguale
+
+
+MODIFICATORI
+- onlyAuthor
+Modificatore che controlla che l'utente che sta firmando la transazione abbia anche un account nostr, per fare ciò si
+controlla la mapping tra address ethereum e address nostr
+
+
+FUNZIONI
+- pubblica_articolo onlyAuthor external payable
+Funzione che serve per creare un'istanza articolo nel contract, una volta creata l'istanza è automaticamente pronta a
+ricevere votazioni
+- vota external payable
+Funzione che serve per votare un articolo
+- link_nostr_address
+Prova crittografica va crittografata sia con la chiave privata di nostr sia con quella di ethereum (per evitare che qualcuno
+legga la mempool e rubi l'account creando una nuova transazione uguale che viene accettata prima)
