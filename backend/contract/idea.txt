@@ -79,3 +79,6 @@ author (funzione link_nostr_address)
 - autore, reader
 - approvazione, rifiuto
 - maggioranza, minoranza
+- LIMITAZIONE -> nel bene o nel male l'esito di una votazione sulla reputazione viene aggiornata con delay
+(e.g. pubblico 100 articoli tutti insieme -> la reputazione al momento della pubblicazione è sempre quella
+del primo articolo pubblicato, magari poteva crescere o diminuire ma non ho modo di conoscerla in modo aggiornato)
