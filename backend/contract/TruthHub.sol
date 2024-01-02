@@ -8,6 +8,11 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 /// import openzeppelin math
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+// SAMPLE VARIABLES VALUES:
+// Ethereum Account -> 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
+// Nostr Account -> 0x76c71aae3a491f1d9eec47cba17e229cda4113a0bbb6e6ae1776d7643e29cafa
+// Event Id -> 0x7465737400000000000000000000000000000000000000000000000000000000
+
 contract TruthHub {
     using Address for address;
     /// Using EnumerableSet for EnumerableSet.AddressSet type
@@ -15,38 +20,43 @@ contract TruthHub {
 
     /// *** CONTRACT VARIABLES *** ///
 
-    /// Ether price needed to express a vote, it will be given back to 
+    /// Ether price needed to express a vote, it will be given back to
     /// either to the voter or the author of the article and it is weighted
     /// by the reputation
-    immutable uint256 public etherVotePrice;
+    uint256 public immutable etherVotePrice;
 
     /// Ether price needed to publish an article, it will be given
     /// back either to the author of the article or the voter and it is
     /// weighted by the reputation
-    immutable uint256 public etherPublishPrice;
+    uint256 public immutable etherPublishPrice;
 
     /// Amount of platform tokens given per Ether spent
-    immutable uint256 public amountVeriPerEther;
+    uint256 public immutable amountVeriPerEther;
 
     /// Minimum delay needed to consider a vote valid (4 days in terms of blocks)
-    immutable uint256 public minimumBlockDelta;
+    uint256 public immutable minimumBlockDelta;
 
     /// Max delay needed to consider a vote valid (7 days in terms of blocks)
-    immutable uint256 public maximumBlockDelta;
+    uint256 public immutable maximumBlockDelta;
 
     /// Total weight vote needed to consider an vote ended
-    immutable uint256 public endWeightVote; // siccome devi moltiplicare tutto per 100 se ad esempio vuoi chiudere a 2 voti devi chiudere a 200
+    uint256 public immutable endWeightVote; // siccome devi moltiplicare tutto per 100 se ad esempio vuoi chiudere a 2 voti devi chiudere a 200
 
     /// Mapping needed to register the correspondences between Ethereum accounts
     /// and Nostr accounts, it is used to check if a user is also an author
     /// It is a mapping(address ethereumAddress => bytes32 nostrAddress)
-    mapping(address => byte32) public authors;
+    mapping(address => bytes32) public authors;
+
+    /// Mapping needed to register the correspondences between Nostr accounts
+    /// and Ethereum accounts, it is used to check if a user is already registered as an author
+    /// It is a mapping(bytes32 nostrAddress => address ethereumAddress)
+    mapping(bytes32 => address) public nostrAccountToEthereumAccount;
 
     /// Mapping needed to register the reputations of the users
     /// The reputaton is a number between -0.5 and +0.5
     /// (e.g. max reputation -> half price and double power)
     /// It is a mapping(address ethereumAddress => uint8 reputation)
-    mapping(address => uint8) public reputations;
+    mapping(address => uint8) internal reputations;
 
     /// Variable needed to save the total number of articles published
     uint256 public totalArticles;
@@ -56,7 +66,7 @@ contract TruthHub {
         /// Progressive article id (can be useful for ERC1155)
         uint256 articleId;
         /// Nostr event id
-        byte32 eventId;
+        bytes32 eventId;
         // Ethereum address of the author
         address author;
         /// Totalizzatore dei voti pesati positivi espressi per l'articolo
@@ -67,12 +77,8 @@ contract TruthHub {
         uint256 etherSpentToPublish;
         /// Number of people who upvoted
         uint256 upvoters;
-        /// Set of upvoters' addresses
-        EnumerableSet.AddressSet upvotersAddresses;
         /// Number of people who downvoted
         uint256 downvoters;
-        /// Set of downvoters' addresses
-        EnumerableSet.AddressSet downvotersAddresses;
         /// Minimum amount of time, in terms of blocks, that must pass
         /// in order to consider a vote valid
         /// The formula is the following:
@@ -83,18 +89,30 @@ contract TruthHub {
         /// The formula is the following:
         /// maximum_block_threshold = current_block_height + 7 days
         uint256 maximumBlockThreshold;
-        /// Ethers spent to upvote
-        /// It is used to store how much an user has spent to upvote an article
-        /// It is a mapping (address userEthereumAddress => uint256 etherSpentToUpvote)
-        mapping (address => uint256) etherSpentToUpvote;
-        /// Ethers spent to downvote
-        /// It is used to store how much an user has spent to downvote an article
-        /// It is a mapping (address userEthereumAddress => uint256 etherSpentToDownvote)
-        mapping (address => uint256) etherSpentToDownvote;
-        /// Number of total weighted votes, it is a computable variable so it 
+        /// Number of total weighted votes, it is a computable variable so it
         /// is not stored in the struct, the formula is the following:
         /// totalWeightVotes = upvotes + downvotes
     }
+
+    /// Set of upvoters' addresses
+    mapping(uint256 => EnumerableSet.AddressSet)
+        internal articleIdToUpvotersAddresses;
+
+    /// Set of downvoters' addresses
+    mapping(uint256 => EnumerableSet.AddressSet)
+        internal articleIdToDownvotersAddresses;
+
+    /// Ethers spent to upvote
+    /// It is used to store how much an user has spent to upvote an article
+    /// It is a mapping (address userEthereumAddress => uint256 etherSpentToUpvote)
+    mapping(uint256 => mapping(address => uint256))
+        internal articleIdToEtherSpentToUpvote;
+
+    /// Ethers spent to downvote
+    /// It is used to store how much an user has spent to downvote an article
+    /// It is a mapping (address userEthereumAddress => uint256 etherSpentToDownvote)
+    mapping(uint256 => mapping(address => uint256))
+        internal articleIdToEtherSpentToDownvote;
 
     /// Mapping needed to register the articles
     /// It is needed to map the articleId of the article to the actual
@@ -107,8 +125,7 @@ contract TruthHub {
     /// Mapping needed to register the correspondences between the eventIds
     /// and the articleIds
     /// It is a mapping(byte32 eventId => uint256 articleId)
-    mapping(byte32 => uint256) public eventIdToArticleId; // metti funzione che prende uint256 e restituisce byte32 sarebbe articleIdToEventId
-
+    mapping(bytes32 => uint256) public eventIdToArticleId; // metti funzione che prende uint256 e restituisce byte32 sarebbe articleIdToEventId
 
     /// *** CONTRACT MODIFIERS *** ///
     /// The following modifier checks if the user that is signing the
@@ -123,7 +140,13 @@ contract TruthHub {
     /// also if the number of active voters is less than the minimum number
     /// of votes needed to consider a vote valid
     modifier voteOpen(uint256 articleId) {
-        require(block.number <= articles[articleId].maximumBlockThreshold && (articles[articleId].upvotes + articles[articleId].downvotes < endWeightVote || block.number < articles[articleId].minimumBlockThreshold), "Vote is closed");
+        require(
+            (block.number <= articles[articleId].maximumBlockThreshold &&
+                articles[articleId].upvotes + articles[articleId].downvotes <
+                endWeightVote) ||
+                (block.number < articles[articleId].minimumBlockThreshold),
+            "Vote is closed"
+        );
         _;
     }
 
@@ -131,25 +154,58 @@ contract TruthHub {
     /// the current block height is greater than the maximum or
     /// if the number of active voters is greater than the minimum number and the current block height is grater than the minimum
     modifier voteClosed(uint256 articleId) {
-        require(block.number > articles[articleId].maximumBlockThreshold || (articles[articleId].upvotes + articles[articleId].downvotes >= endWeightVote && block.number >= articles[articleId].minimumBlockThreshold), "Vote is open");
+        require(
+            (articles[articleId].upvotes + articles[articleId].downvotes >=
+                endWeightVote &&
+                block.number >= articles[articleId].minimumBlockThreshold) ||
+                (block.number > articles[articleId].maximumBlockThreshold),
+            "Vote is open"
+        );
         _;
     }
 
     /// The following modifier checks if a user has already voted for an article
     /// It checks if the user has already spent ether to upvote or downvote an article
     modifier validVoter(uint256 articleId) {
-        require(articles[articleId].etherSpentToUpvote[msg.sender] == 0 && articles[articleId].etherSpentToDownvote[msg.sender] == 0, "You have already voted");
+        require(
+            articleIdToEtherSpentToUpvote[articleId][msg.sender] == 0 &&
+                articleIdToEtherSpentToDownvote[articleId][msg.sender] == 0,
+            "You have already voted"
+        );
         _;
     }
 
     modifier validClaimer(uint256 articleId) {
         // Check if the msg.sender is in the majority or if there is a tie between upvotes and downvotes
-        require(containes(articles[articleId].upvotersAddresses, msg.sender) || containes(articles[articleId].downvotersAddresses, msg.sender), "You did not vote");
-        if (articles[articleId].upvotes > articles[articleId].downvotes){
-            require(containes(articles[articleId].upvotersAddresses, msg.sender), "You are not in the majority");
-        }
-        else if (articles[articleId].upvotes < articles[articleId].downvotes){
-            require(containes(articles[articleId].downvotersAddresses, msg.sender) && articles[articleId].author != msg.sender, "You are not in the majority");
+        require(
+            EnumerableSet.contains(
+                articleIdToUpvotersAddresses[articleId],
+                msg.sender
+            ) ||
+                EnumerableSet.contains(
+                    articleIdToDownvotersAddresses[articleId],
+                    msg.sender
+                ),
+            "You did not vote"
+        );
+        if (articles[articleId].upvotes > articles[articleId].downvotes) {
+            require(
+                EnumerableSet.contains(
+                    articleIdToUpvotersAddresses[articleId],
+                    msg.sender
+                ),
+                "You are not in the majority"
+            );
+        } else if (
+            articles[articleId].upvotes < articles[articleId].downvotes
+        ) {
+            require(
+                EnumerableSet.contains(
+                    articleIdToDownvotersAddresses[articleId],
+                    msg.sender
+                ) && articles[articleId].author != msg.sender,
+                "You are not in the majority"
+            );
         }
         _;
     }
@@ -168,8 +224,7 @@ contract TruthHub {
     }
 
     /// The following function is used to receive ether
-    receive() external payable {
-    }
+    receive() external payable {}
 
     /// The following function is used to register a new author
     /// In order to do that the cryptohgraphic proof must be valid
@@ -183,31 +238,55 @@ contract TruthHub {
     /// may copy the transaction and let the transaction be mined before the original one, thus registering themselves
     /// as the ethereum account associated with that specific Nostr address
     /// The function also checks if the user is already registered as an author
-    function registerAuthor(byte32 signature, byte32 nostrPublicKey) external {
+    function registerAuthor(
+        bytes32 signature,
+        bytes32 nostrPublicKey
+    ) external {
         require(authors[msg.sender] == 0, "You are already an author");
+        require(
+            nostrAccountToEthereumAccount[nostrPublicKey] == address(0),
+            "Nostr account already associated to another author"
+        );
         //require(keccak256(abi.encodePacked(signature)) == nostrPublicKey, "Invalid cryptographic proof");
+        _setReputation(msg.sender);
         authors[msg.sender] = nostrPublicKey;
+        nostrAccountToEthereumAccount[nostrPublicKey] = msg.sender;
     }
 
-    function computation(address user, uint256 actionPrice) internal view returns (uint256){
+    function _setReputation(address user) internal {
+        if (reputations[user] == 0) {
+            reputations[user] = 51;
+        }
+    }
+
+    function getReputation(address user) public view returns (uint8) {
+        if (reputations[user] == 0) {
+            return 51;
+        }
+        return reputations[user];
+    }
+
+    function computation(
+        address user,
+        uint256 actionPrice
+    ) internal view returns (uint256) {
         // se reputazione è 100 pago la metà se è 1 pago il doppio se 50 pago prezzo base
         // 1 = 200
         // 51 = 100
-        // 101 = 50 
+        // 101 = 50
         uint256 x;
-        uint256 reputation = reputations[user];
-        if (reputation <= 51){
+        uint8 reputation = getReputation(user);
+        if (reputation <= 51) {
             uint256 subRes;
             uint256 mulRes;
             // 100 + ((51 - reputation) * 2)
-            (, subRes) = trysub(51, reputation);
-            (, mulRes) = trymul(subRes, 2);
-            (, x) = tryadd(100, mulRes);
+            (, subRes) = Math.trySub(51, reputation);
+            (, mulRes) = Math.tryMul(subRes, 2);
+            (, x) = Math.tryAdd(100, mulRes);
+        } else {
+            (, x) = Math.trySub(reputation, 51);
         }
-        else{
-            (, x) = trysub(reputation, 51);
-        }
-        return muldiv(actionPrice, x, 100);
+        return Math.mulDiv(actionPrice, x, 100);
     }
 
     function computePublishPrice(address author) public view returns (uint256) {
@@ -218,23 +297,22 @@ contract TruthHub {
         return computation(author, etherVotePrice);
     }
 
-    function computeVoteWeight(address voter) public view return (uint256) {
+    function computeVoteWeight(address voter) public view returns (uint256) {
         // se reputazione è 100 pago la metà se è 1 pago il doppio se 50 pago prezzo base
         // 1 = 50
         // 51 = 100
         // 101 = 200
         uint256 x;
-        uint256 reputation = reputations[voter];
-        if (reputation <= 51){
-            (, x) = tryadd(reputation, 49);
-        }
-        else{
+        uint256 reputation = getReputation(voter);
+        if (reputation <= 51) {
+            (, x) = Math.tryAdd(reputation, 49);
+        } else {
             // 100 + ((reputation - 51) * 2)
             uint256 subRes;
             uint256 mulRes;
-            (, subRes) = trysub(reputation, 51);
-            (, mulRes) = trymul(subRes, 2);
-            (, x) = tryadd(100, mulRes);
+            (, subRes) = Math.trySub(reputation, 51);
+            (, mulRes) = Math.tryMul(subRes, 2);
+            (, x) = Math.tryAdd(100, mulRes);
         }
         return x;
     }
@@ -244,27 +322,32 @@ contract TruthHub {
     /// The function also checks if the user has enough ether to pay the
     /// minimum price needed to publish an article
     /// Once that an article is published it is automatically ready to be voted
-    function publishArticle(byte32 eventId) external payable onlyAuthor returns (uint256){
-        require(msg.value >= computePublishPrice(msg.sender), "Not enough ether");
+    function publishArticle(
+        bytes32 eventId
+    ) external payable onlyAuthor returns (uint256) {
+        require(
+            msg.value >= computePublishPrice(msg.sender),
+            "Not enough ether"
+        );
         require(eventIdToArticleId[eventId] == 0, "Article already published");
         totalArticles += 1;
+        uint256 articleId = totalArticles;
         // The mappings are created empty by default
         articles[articleId] = Article(
-            totalArticles, // articleId
+            articleId, // articleId
             eventId, // eventId
             msg.sender, // author
             0, // upvotes
             0, // downvotes
             msg.value, // etherSpentToPublish
             0, // upvoters
-            EnumerableSet.AddressSet(), // upvotersAddresses
             0, // downvoters
-            EnumerableSet.AddressSet(), // downvotersAddresses
             block.number + minimumBlockDelta, // minimumBlockThreshold
             block.number + maximumBlockDelta // maximumBlockThreshold
-            );
-        articles[articleId].upvotersAddresses.add(msg.sender);
-        articles[articleId].downvotersAddresses.add(msg.sender);
+        );
+        articleIdToUpvotersAddresses[articleId].add(msg.sender);
+        articleIdToDownvotersAddresses[articleId].add(msg.sender);
+        eventIdToArticleId[eventId] = articleId;
         return articleId;
     }
 
@@ -275,19 +358,22 @@ contract TruthHub {
     // The function also checks if the user has already voted for the article
     // The function also checks if the user is the author of the article
     // POI AGGIUNGI IL PESO DOVUTO AI TOKENS
-    function vote (uint256 articleId, bool vote) external payable validVoter(articleId) voteOpen(articleId) {
+    function vote(
+        uint256 articleId,
+        bool voteExpressed
+    ) external payable validVoter(articleId) voteOpen(articleId) {
         require(msg.value >= computeVotePrice(msg.sender), "Not enough ether");
-        if (vote) {
+        _setReputation(msg.sender);
+        if (voteExpressed) {
             articles[articleId].upvotes += computeVoteWeight(msg.sender);
             articles[articleId].upvoters += 1;
-            articles[articleId].upvotersAddresses.add(msg.sender);
-            articles[articleId].etherSpentToUpvote[msg.sender] = msg.value;
-        }
-        else {
+            articleIdToUpvotersAddresses[articleId].add(msg.sender);
+            articleIdToEtherSpentToUpvote[articleId][msg.sender] = msg.value;
+        } else {
             articles[articleId].downvotes += computeVoteWeight(msg.sender);
             articles[articleId].downvoters += 1;
-            articles[articleId].downvotersAddresses.add(msg.sender);
-            articles[articleId].etherSpentToDownvote[msg.sender] = msg.value;
+            articleIdToDownvotersAddresses[articleId].add(msg.sender);
+            articleIdToEtherSpentToDownvote[articleId][msg.sender] = msg.value;
         }
     }
 
@@ -309,27 +395,37 @@ contract TruthHub {
     /// has been spent to express the vote and a proportional part of the ethers collected among the upvotes and the ethers
     /// spent to publish the article; the users that expressed an upvote loose the ether spent to express the vote
     /// and their reputation is lowered by 1
-    function claim_stake_reward (uint256 articleId) external validClaimer voteClosed(articleId) {
+    function claim_stake_reward(
+        uint256 articleId
+    ) external validClaimer voteClosed(articleId) {
         // MAJORITY -> UPVOTES
         if (articles[articleId].upvotes > articles[articleId].downvotes) {
             // Checks if the msg.sender is the author
-            if (articles[articleId].author == msg.sender){
+            if (articles[articleId].author == msg.sender) {
                 // The author gets the ethers spent to publish the article and the ethers collected from the downvotes
                 // and an amount of platform tokens proportional to how much ether has been spent to publish the article
-                payable(msg.sender).transfer(articles[eventId].etherSpentToPublish + articles[eventId].downvotes * minEtherVotePrice);
+                payable(msg.sender).transfer(
+                    articles[eventId].etherSpentToPublish +
+                        articles[eventId].downvotes *
+                        minEtherVotePrice
+                );
                 // The author gets an amount of platform tokens proportional to how much ether has been spent to publish the article
                 // The formula is the following:
                 // amountVeri = (minEtherPublishPrice + articles[eventId].downvotes * minEtherVotePrice) * _amountVeriPerEther
                 // The author reputation is increased by 1
                 reputations[msg.sender] += 1;
-            }
-            else{
+            } else {
                 // This means that the msg.sender is a reader
-                require(voteExpressed[msg.sender][eventId] == true, "You have not expressed a vote");
+                require(
+                    voteExpressed[msg.sender][eventId] == true,
+                    "You have not expressed a vote"
+                );
                 // If the reader is an upvoter
-                if (voteExpressed[msg.sender][eventId] == true){
+                if (voteExpressed[msg.sender][eventId] == true) {
                     // The reader gets back the ether spent to express the vote
-                    payable(msg.sender).transfer(etherSpentToVote[msg.sender][eventId]);
+                    payable(msg.sender).transfer(
+                        etherSpentToVote[msg.sender][eventId]
+                    );
                     // The reader gets an amount of platform tokens proportional to how much ether has been spent to express the vote
                     // The formula is the following:
                     // amountVeri = etherSpentToVote[msg.sender][eventId] * _amountVeriPerEther
@@ -337,33 +433,37 @@ contract TruthHub {
                     reputations[msg.sender] += 1;
                 }
                 // This means that the reader is a downvoter
-                else{
+                else {
                     // The reader looses the ether spent to express the vote
                     // The reader reputation is lowered by 1
                     reputations[msg.sender] -= 1;
                 }
             }
         }
-        if (articles[eventId].upvotes < articles[eventId].downvotes){
+        if (articles[eventId].upvotes < articles[eventId].downvotes) {
             // Checks if the msg.sender is an author
-            if (authors[msg.sender] != 0){
+            if (authors[msg.sender] != 0) {
                 // The author looses the ethers spent to publish the article
                 // The author reputation is lowered by 1
                 reputations[msg.sender] -= 1;
-            }
-            else{
+            } else {
                 // This means that the msg.sender is a reader
-                require(voteExpressed[msg.sender][eventId] == true, "You have not expressed a vote");
+                require(
+                    voteExpressed[msg.sender][eventId] == true,
+                    "You have not expressed a vote"
+                );
                 // If the reader is an upvoter
-                if (voteExpressed[msg.sender][eventId] == true){
+                if (voteExpressed[msg.sender][eventId] == true) {
                     // The reader looses the ether spent to express the vote
                     // The reader reputation is lowered by 1
                     reputations[msg.sender] -= 1;
                 }
                 // This means that the reader is a downvoter
-                else{
+                else {
                     // The reader gets back the ether spent to express the vote
-                    payable(msg.sender).transfer(etherSpentToVote[msg.sender][eventId]); // Come calcolo il resto da dare?
+                    payable(msg.sender).transfer(
+                        etherSpentToVote[msg.sender][eventId]
+                    ); // Come calcolo il resto da dare?
                     // The reader gets an amount of platform tokens proportional to how much ether has been spent to express the vote
                     // The formula is the following:
                     // amountVeri = etherSpentToVote[msg.sender][eventId] * _amountVeriPerEther
