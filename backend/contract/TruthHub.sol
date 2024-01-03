@@ -89,6 +89,10 @@ contract TruthHub {
         /// The formula is the following:
         /// maximum_block_threshold = current_block_height + 7 days
         uint256 maximumBlockThreshold;
+        // Amount of ethers spent in the upvotes
+        uint256 ethersSpentInUpvotes;
+        // Amount of ethers spent in the downvotes
+        uint256 ethersSpentInDownvotes;
         /// Number of total weighted votes, it is a computable variable so it
         /// is not stored in the struct, the formula is the following:
         /// totalWeightVotes = upvotes + downvotes
@@ -188,6 +192,7 @@ contract TruthHub {
                 ),
             "You did not vote"
         );
+        // Majority -> upvotes
         if (articles[articleId].upvotes > articles[articleId].downvotes) {
             require(
                 EnumerableSet.contains(
@@ -196,9 +201,9 @@ contract TruthHub {
                 ),
                 "You are not in the majority"
             );
-        } else if (
-            articles[articleId].upvotes < articles[articleId].downvotes
-        ) {
+        }
+        // Majority -> downvotes
+        else if (articles[articleId].upvotes < articles[articleId].downvotes) {
             require(
                 EnumerableSet.contains(
                     articleIdToDownvotersAddresses[articleId],
@@ -343,7 +348,9 @@ contract TruthHub {
             0, // upvoters
             0, // downvoters
             block.number + minimumBlockDelta, // minimumBlockThreshold
-            block.number + maximumBlockDelta // maximumBlockThreshold
+            block.number + maximumBlockDelta, // maximumBlockThreshold
+            0, // ethersSpentInUpvotes
+            0 // ethersSpentInDownvotes
         );
         articleIdToUpvotersAddresses[articleId].add(msg.sender);
         articleIdToDownvotersAddresses[articleId].add(msg.sender);
@@ -369,11 +376,25 @@ contract TruthHub {
             articles[articleId].upvoters += 1;
             articleIdToUpvotersAddresses[articleId].add(msg.sender);
             articleIdToEtherSpentToUpvote[articleId][msg.sender] = msg.value;
+            articles[articleId].ethersSpentInUpvotes += msg.value;
         } else {
             articles[articleId].downvotes += computeVoteWeight(msg.sender);
             articles[articleId].downvoters += 1;
             articleIdToDownvotersAddresses[articleId].add(msg.sender);
             articleIdToEtherSpentToDownvote[articleId][msg.sender] = msg.value;
+            articles[articleId].ethersSpentInDownvotes += msg.value;
+        }
+    }
+
+    function updateReputation(address user, bool direction) internal {
+        if (direction) {
+            if (reputations[user] < 101) {
+                reputations[user] += 1;
+            }
+        } else {
+            if (reputations[user] > 1) {
+                reputations[user] -= 1;
+            }
         }
     }
 
@@ -395,50 +416,46 @@ contract TruthHub {
     /// has been spent to express the vote and a proportional part of the ethers collected among the upvotes and the ethers
     /// spent to publish the article; the users that expressed an upvote loose the ether spent to express the vote
     /// and their reputation is lowered by 1
-    function claim_stake_reward(
+    function claimReward(
         uint256 articleId
     ) external validClaimer voteClosed(articleId) {
+        uint256 etherAmount;
+        uint256 tokenAmount;
+        // No majority
+        if (articles[articleId].upvotes == articles[articleId].downvotes) {
+            // The user get back only thier stake, the reputation is not modified
+            if (articles[articleId].author == msg.sender) {
+                // The author gets back the amount paid to publish the article
+                etherAmount = articles[articleId].etherSpentToPublish;
+            } else {
+                // The readers get back the amount paid to vote
+                // The sum is exactly equal to the amount paied because the user will have a value different from 0 only in one of the two mappings
+                etherAmount =
+                    articleIdToEtherSpentToUpvote[articleId][msg.sender] +
+                    articleIdToEtherSpentToDownvote[articleId][msg.sender];
+            }
+            tokenAmount = 0;
+        }
         // MAJORITY -> UPVOTES
         if (articles[articleId].upvotes > articles[articleId].downvotes) {
-            // Checks if the msg.sender is the author
+            // AUTHOR
             if (articles[articleId].author == msg.sender) {
                 // The author gets the ethers spent to publish the article and the ethers collected from the downvotes
                 // and an amount of platform tokens proportional to how much ether has been spent to publish the article
-                payable(msg.sender).transfer(
-                    articles[eventId].etherSpentToPublish +
-                        articles[eventId].downvotes *
-                        minEtherVotePrice
+                etherAmount =
+                    articles[articleId].etherSpentToPublish +
+                    articles[articleId].ethersSpentInDownvotes;
+                tokenAmount = Math.tryMul(
+                    articles[articleId].etherSpentToPublish,
+                    amountVeriPerEther
                 );
-                // The author gets an amount of platform tokens proportional to how much ether has been spent to publish the article
-                // The formula is the following:
-                // amountVeri = (minEtherPublishPrice + articles[eventId].downvotes * minEtherVotePrice) * _amountVeriPerEther
-                // The author reputation is increased by 1
-                reputations[msg.sender] += 1;
             } else {
-                // This means that the msg.sender is a reader
-                require(
-                    voteExpressed[msg.sender][eventId] == true,
-                    "You have not expressed a vote"
-                );
-                // If the reader is an upvoter
-                if (voteExpressed[msg.sender][eventId] == true) {
-                    // The reader gets back the ether spent to express the vote
-                    payable(msg.sender).transfer(
-                        etherSpentToVote[msg.sender][eventId]
-                    );
-                    // The reader gets an amount of platform tokens proportional to how much ether has been spent to express the vote
-                    // The formula is the following:
-                    // amountVeri = etherSpentToVote[msg.sender][eventId] * _amountVeriPerEther
-                    // The reader reputation is increased by 1
-                    reputations[msg.sender] += 1;
-                }
-                // This means that the reader is a downvoter
-                else {
-                    // The reader looses the ether spent to express the vote
-                    // The reader reputation is lowered by 1
-                    reputations[msg.sender] -= 1;
-                }
+                // VOTERS (READERS)
+                // The voters, who are by construction in the majority or else they would not be validClaimer, will get back the amount
+                // of ether spent to vote and an amount of platform tokens proportional to how much they spent
             }
+            // The reputation of the users in the majority is increased by 1
+            updateReputation(msg.sender, true);
         }
         if (articles[eventId].upvotes < articles[eventId].downvotes) {
             // Checks if the msg.sender is an author
@@ -461,9 +478,9 @@ contract TruthHub {
                 // This means that the reader is a downvoter
                 else {
                     // The reader gets back the ether spent to express the vote
-                    payable(msg.sender).transfer(
-                        etherSpentToVote[msg.sender][eventId]
-                    ); // Come calcolo il resto da dare?
+                    //payable(msg.sender).transfer(
+                    //    etherSpentToVote[msg.sender][eventId];
+                    //); // Come calcolo il resto da dare?
                     // The reader gets an amount of platform tokens proportional to how much ether has been spent to express the vote
                     // The formula is the following:
                     // amountVeri = etherSpentToVote[msg.sender][eventId] * _amountVeriPerEther
@@ -472,5 +489,7 @@ contract TruthHub {
                 }
             }
         }
+        Address.sendValue(payable(msg.sender), etherAmount);
+        //Address.sendValue(payable(msg.sender), tokenAmount);
     }
 }
