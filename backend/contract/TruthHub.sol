@@ -31,7 +31,10 @@ contract TruthHub {
     uint256 public immutable etherPublishPrice;
 
     /// Amount of platform tokens given per Ether spent
-    uint256 public immutable amountVeriPerEther;
+    uint256 public immutable multiplierVeriPerEther;
+
+    /// Amount of platform tokens given per user purged
+    uint256 public immutable amountVeriPerUserPurged;
 
     /// Minimum delay needed to consider a vote valid (4 days in terms of blocks)
     uint256 public immutable minimumBlockDelta;
@@ -52,11 +55,15 @@ contract TruthHub {
     /// It is a mapping(bytes32 nostrAddress => address ethereumAddress)
     mapping(bytes32 => address) public nostrAccountToEthereumAccount;
 
-    /// Mapping needed to register the reputations of the users
-    /// The reputaton is a number between -0.5 and +0.5
-    /// (e.g. max reputation -> half price and double power)
+    /// The following 2 mappings are used in order to have a possible different reputation as a reader and as an author
+
+    /// Mapping needed to register the reputations of the readers
     /// It is a mapping(address ethereumAddress => uint8 reputation)
-    mapping(address => uint8) internal reputations;
+    mapping(address => uint8) internal readersReputations;
+
+    /// Mapping needed to register the reputations of the authors
+    /// It is a mapping(address ethereumAddress => uint8 reputation)
+    mapping(address => uint8) internal authorsReputations;
 
     /// Variable needed to save the total number of articles published
     uint256 public totalArticles;
@@ -221,7 +228,8 @@ contract TruthHub {
         // Initialize the immutable variables
         etherVotePrice = 1000000000000000 wei; // 0.001 ether
         etherPublishPrice = 10000000000000000 wei; // 0.01 ether
-        amountVeriPerEther = 1000; // 1 ether = 1000 veri -> 0.01 ether = 10 veri
+        multiplierVeriPerEther = 1000; // 1 ether = 1000 veri -> 0.01 ether = 10 veri
+        amountVeriPerUserPurged = 100000000000000000;
         endWeightVote = 31; // placeholder value
         minimumBlockDelta = 23040; // 4 days in terms of blocks
         maximumBlockDelta = 40320; // 7 days in terms of blocks
@@ -230,6 +238,29 @@ contract TruthHub {
 
     /// The following function is used to receive ether
     receive() external payable {}
+
+    function _setReaderReputation(address user) internal {
+        if (readersReputations[user] == 0) {
+            readersReputations[user] = 51;
+        }
+    }
+
+    function getReaderReputation(address user) public view returns (uint8) {
+        if (readersReputations[user] == 0) {
+            return 51;
+        }
+        return readersReputations[user];
+    }
+
+    function _setAuthorReputation(address user) internal {
+        if (authorsReputations[user] == 0) {
+            authorsReputations[user] = 51;
+        }
+    }
+
+    function getAuthorReputation(address user) public view returns (uint8) {
+        return authorsReputations[user];
+    }
 
     /// The following function is used to register a new author
     /// In order to do that the cryptohgraphic proof must be valid
@@ -253,34 +284,20 @@ contract TruthHub {
             "Nostr account already associated to another author"
         );
         //require(keccak256(abi.encodePacked(signature)) == nostrPublicKey, "Invalid cryptographic proof");
-        _setReputation(msg.sender);
+        _setAuthorReputation(msg.sender);
         authors[msg.sender] = nostrPublicKey;
         nostrAccountToEthereumAccount[nostrPublicKey] = msg.sender;
     }
 
-    function _setReputation(address user) internal {
-        if (reputations[user] == 0) {
-            reputations[user] = 51;
-        }
-    }
-
-    function getReputation(address user) public view returns (uint8) {
-        if (reputations[user] == 0) {
-            return 51;
-        }
-        return reputations[user];
-    }
-
     function computation(
-        address user,
-        uint256 actionPrice
-    ) internal view returns (uint256) {
+        uint256 actionPrice,
+        uint8 reputation
+    ) internal pure returns (uint256) {
         // se reputazione è 100 pago la metà se è 1 pago il doppio se 50 pago prezzo base
         // 1 = 200
         // 51 = 100
         // 101 = 50
         uint256 x;
-        uint8 reputation = getReputation(user);
         if (reputation <= 51) {
             uint256 subRes;
             uint256 mulRes;
@@ -295,20 +312,22 @@ contract TruthHub {
     }
 
     function computePublishPrice(address author) public view returns (uint256) {
-        return computation(author, etherPublishPrice);
+        uint8 reputation = getAuthorReputation(author);
+        return computation(etherPublishPrice, reputation);
     }
 
-    function computeVotePrice(address author) public view returns (uint256) {
-        return computation(author, etherVotePrice);
+    function computeVotePrice(address reader) public view returns (uint256) {
+        uint8 reputation = getReaderReputation(reader);
+        return computation(etherVotePrice, reputation);
     }
 
-    function computeVoteWeight(address voter) public view returns (uint256) {
+    function computeVoteWeight(address reader) public view returns (uint256) {
         // se reputazione è 100 pago la metà se è 1 pago il doppio se 50 pago prezzo base
         // 1 = 50
         // 51 = 100
         // 101 = 200
         uint256 x;
-        uint256 reputation = getReputation(voter);
+        uint8 reputation = getReaderReputation(reader);
         if (reputation <= 51) {
             (, x) = Math.tryAdd(reputation, 49);
         } else {
@@ -370,7 +389,7 @@ contract TruthHub {
         bool voteExpressed
     ) external payable validVoter(articleId) voteOpen(articleId) {
         require(msg.value >= computeVotePrice(msg.sender), "Not enough ether");
-        _setReputation(msg.sender);
+        _setReaderReputation(msg.sender);
         if (voteExpressed) {
             articles[articleId].upvotes += computeVoteWeight(msg.sender);
             articles[articleId].upvoters += 1;
@@ -386,14 +405,26 @@ contract TruthHub {
         }
     }
 
-    function updateReputation(address user, bool direction) internal {
+    function updateReaderReputation(address user, bool direction) internal {
         if (direction) {
-            if (reputations[user] < 101) {
-                reputations[user] += 1;
+            if (readersReputations[user] < 101) {
+                readersReputations[user] += 1;
             }
         } else {
-            if (reputations[user] > 1) {
-                reputations[user] -= 1;
+            if (readersReputations[user] > 1) {
+                readersReputations[user] -= 1;
+            }
+        }
+    }
+
+    function updateAuthorReputation(address user, bool direction) internal {
+        if (direction) {
+            if (authorsReputations[user] < 101) {
+                authorsReputations[user] += 1;
+            }
+        } else {
+            if (authorsReputations[user] > 1) {
+                authorsReputations[user] -= 1;
             }
         }
     }
@@ -418,9 +449,12 @@ contract TruthHub {
     /// and their reputation is lowered by 1
     function claimReward(
         uint256 articleId
-    ) external validClaimer voteClosed(articleId) {
+    ) external validClaimer(articleId) voteClosed(articleId) {
         uint256 etherAmount;
         uint256 tokenAmount;
+        uint256 additionalTokens;
+        uint256 etherSum;
+        uint256 etherDuePart;
         // No majority
         if (articles[articleId].upvotes == articles[articleId].downvotes) {
             // The user get back only thier stake, the reputation is not modified
@@ -445,49 +479,119 @@ contract TruthHub {
                 etherAmount =
                     articles[articleId].etherSpentToPublish +
                     articles[articleId].ethersSpentInDownvotes;
-                tokenAmount = Math.tryMul(
+                (, tokenAmount) = Math.tryMul(
                     articles[articleId].etherSpentToPublish,
-                    amountVeriPerEther
+                    multiplierVeriPerEther
                 );
+                // The reputation of the author is increased by 1
+                updateAuthorReputation(msg.sender, true);
             } else {
                 // VOTERS (READERS)
                 // The voters, who are by construction in the majority or else they would not be validClaimer, will get back the amount
                 // of ether spent to vote and an amount of platform tokens proportional to how much they spent
-            }
-            // The reputation of the users in the majority is increased by 1
-            updateReputation(msg.sender, true);
-        }
-        if (articles[eventId].upvotes < articles[eventId].downvotes) {
-            // Checks if the msg.sender is an author
-            if (authors[msg.sender] != 0) {
-                // The author looses the ethers spent to publish the article
-                // The author reputation is lowered by 1
-                reputations[msg.sender] -= 1;
-            } else {
-                // This means that the msg.sender is a reader
-                require(
-                    voteExpressed[msg.sender][eventId] == true,
-                    "You have not expressed a vote"
+                etherAmount = articleIdToEtherSpentToUpvote[articleId][
+                    msg.sender
+                ];
+                (, tokenAmount) = Math.tryMul(
+                    articleIdToEtherSpentToUpvote[articleId][msg.sender],
+                    multiplierVeriPerEther
                 );
-                // If the reader is an upvoter
-                if (voteExpressed[msg.sender][eventId] == true) {
-                    // The reader looses the ether spent to express the vote
-                    // The reader reputation is lowered by 1
-                    reputations[msg.sender] -= 1;
-                }
-                // This means that the reader is a downvoter
-                else {
-                    // The reader gets back the ether spent to express the vote
-                    //payable(msg.sender).transfer(
-                    //    etherSpentToVote[msg.sender][eventId];
-                    //); // Come calcolo il resto da dare?
-                    // The reader gets an amount of platform tokens proportional to how much ether has been spent to express the vote
-                    // The formula is the following:
-                    // amountVeri = etherSpentToVote[msg.sender][eventId] * _amountVeriPerEther
-                    // The reader reputation is increased by 1
-                    reputations[msg.sender] += 1;
-                }
+                // The reputation of the reader is increased by 1
+                updateReaderReputation(msg.sender, true);
             }
+            // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
+            // Compute how many people are eligible to update the reputation of the minority
+            uint256 majorityUsers = EnumerableSet.length(
+                articleIdToUpvotersAddresses[articleId]
+            );
+            uint256 minorityUsers = EnumerableSet.length(
+                articleIdToDownvotersAddresses[articleId]
+            );
+            uint256 addressesToPurge = Math.ceilDiv(
+                minorityUsers,
+                majorityUsers
+            );
+            for (uint256 i = 0; i < addressesToPurge; i++) {
+                address userToPurge = EnumerableSet.at(
+                    articleIdToDownvotersAddresses[articleId],
+                    0
+                );
+                if (userToPurge != articles[articleId].author) {
+                    updateReaderReputation(userToPurge, false);
+                }
+                EnumerableSet.remove(
+                    articleIdToDownvotersAddresses[articleId],
+                    userToPurge
+                );
+            }
+            // In order to compute in the future the amount of eligible people to update the reputation of the minority
+            EnumerableSet.remove(
+                articleIdToUpvotersAddresses[articleId],
+                msg.sender
+            );
+            (, additionalTokens) = Math.tryMul(
+                addressesToPurge,
+                amountVeriPerUserPurged
+            );
+            tokenAmount += additionalTokens;
+        }
+        // MAJORITY -> DOWNVOTES
+        // Update author reputation in a negative way
+        if (articles[articleId].upvotes < articles[articleId].downvotes) {
+            // Only the readers who voted downvote will get back the stake + a part of the sum of the ether spent in the upvotes
+            // and the ether spent in the pubblication + a proportional amount of platform tokens
+            (, etherSum) = Math.tryAdd(
+                articles[articleId].etherSpentToPublish,
+                articles[articleId].ethersSpentInUpvotes
+            );
+            (, etherDuePart) = Math.tryDiv(
+                etherSum,
+                articles[articleId].downvoters
+            );
+            etherAmount =
+                articleIdToEtherSpentToDownvote[articleId][msg.sender] +
+                etherDuePart;
+            (, tokenAmount) = Math.tryMul(
+                articleIdToEtherSpentToDownvote[articleId][msg.sender],
+                multiplierVeriPerEther
+            );
+            // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
+            // Compute how many people are eligible to update the reputation of the minority
+            uint256 majorityUsers = EnumerableSet.length(
+                articleIdToDownvotersAddresses[articleId]
+            );
+            uint256 minorityUsers = EnumerableSet.length(
+                articleIdToUpvotersAddresses[articleId]
+            );
+            uint256 addressesToPurge = Math.ceilDiv(
+                minorityUsers,
+                majorityUsers
+            );
+            for (uint256 i = 0; i < addressesToPurge; i++) {
+                address userToPurge = EnumerableSet.at(
+                    articleIdToDownvotersAddresses[articleId],
+                    0
+                );
+                if (userToPurge == articles[articleId].author) {
+                    updateAuthorReputation(userToPurge, false);
+                } else {
+                    updateReaderReputation(userToPurge, false);
+                }
+                EnumerableSet.remove(
+                    articleIdToDownvotersAddresses[articleId],
+                    userToPurge
+                );
+            }
+            // In order to compute in the future the amount of eligible people to update the reputation of the minority
+            EnumerableSet.remove(
+                articleIdToUpvotersAddresses[articleId],
+                msg.sender
+            );
+            (, additionalTokens) = Math.tryMul(
+                addressesToPurge,
+                amountVeriPerUserPurged
+            );
+            tokenAmount += additionalTokens;
         }
         Address.sendValue(payable(msg.sender), etherAmount);
         //Address.sendValue(payable(msg.sender), tokenAmount);
