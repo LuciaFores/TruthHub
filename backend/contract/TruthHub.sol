@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.9;
 
 /// Address library provides utilities for working with addresses
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -511,6 +511,8 @@ contract TruthHub {
         uint256 etherAmount;
         uint256 tokenAmountToMint;
         uint256 tokenAmountToGiveBack;
+        uint256 additionalTokenAmountToMint;
+        uint256 additionalTokenAmountToGiveBack;
         // No majority
         if (articles[articleId].upvotes == articles[articleId].downvotes) {
             // The user get back only thier stake, the reputation is not modified
@@ -563,8 +565,6 @@ contract TruthHub {
             }
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 additionalTokenAmountToMint;
-            uint256 additionalTokenAmountToGiveBack;
             uint256 majorityUsers = EnumerableSet.length(
                 articleIdToUpvotersAddresses[articleId]
             );
@@ -579,7 +579,6 @@ contract TruthHub {
                 articles[articleId].veriSpentInDownvotes,
                 articles[articleId].upvoters
             );
-            tokenAmountToGiveBack += additionalTokenAmountToGiveBack;
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToDownvotersAddresses[articleId],
@@ -607,21 +606,13 @@ contract TruthHub {
         // MAJORITY -> DOWNVOTES
         // Update author reputation in a negative way
         if (articles[articleId].upvotes < articles[articleId].downvotes) {
-            uint256 etherSum;
-            uint256 etherDuePart;
             // Only the readers who voted downvote will get back the stake + a part of the sum of the ether spent in the upvotes
             // and the ether spent in the pubblication + a proportional amount of platform tokens
-            (, etherSum) = Math.tryAdd(
-                articles[articleId].etherSpentToPublish,
-                articles[articleId].ethersSpentInUpvotes
-            );
-            (, etherDuePart) = Math.tryDiv(
-                etherSum,
-                articles[articleId].downvoters
-            );
             etherAmount =
                 articleIdToEtherSpentToDownvote[articleId][msg.sender] +
-                etherDuePart;
+                ((articles[articleId].etherSpentToPublish +
+                    articles[articleId].ethersSpentInUpvotes) /
+                    articles[articleId].downvoters);
             (, tokenAmountToMint) = Math.tryMul(
                 articleIdToEtherSpentToDownvote[articleId][msg.sender],
                 multiplierVeriPerEther
@@ -632,8 +623,6 @@ contract TruthHub {
             updateReaderReputation(msg.sender, true);
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 additionalTokenAmountToMint;
-            uint256 additionalTokenAmountToGiveBack;
             uint256 majorityUsers = (EnumerableSet.length(
                 articleIdToDownvotersAddresses[articleId]
             ) - 1); // because by construction also the author is here but in this case the author is not a valid claimer
@@ -648,7 +637,6 @@ contract TruthHub {
                 articles[articleId].veriSpentInUpvotes,
                 articles[articleId].downvoters
             );
-            tokenAmountToGiveBack += additionalTokenAmountToGiveBack;
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToUpvotersAddresses[articleId],
@@ -673,12 +661,17 @@ contract TruthHub {
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmountToMint += additionalTokenAmountToMint;
         }
         Address.sendValue(payable(msg.sender), etherAmount);
-        contractVeriToken.mint(msg.sender, tokenAmountToMint);
+        contractVeriToken.mint(
+            msg.sender,
+            tokenAmountToMint + additionalTokenAmountToMint
+        );
         if (tokenAmountToGiveBack > 0) {
-            contractVeriToken.transfer(msg.sender, tokenAmountToGiveBack);
+            contractVeriToken.transfer(
+                msg.sender,
+                tokenAmountToGiveBack + additionalTokenAmountToGiveBack
+            );
         }
     }
 }
