@@ -452,9 +452,6 @@ contract TruthHub {
     ) external validClaimer(articleId) voteClosed(articleId) {
         uint256 etherAmount;
         uint256 tokenAmount;
-        uint256 additionalTokens;
-        uint256 etherSum;
-        uint256 etherDuePart;
         // No majority
         if (articles[articleId].upvotes == articles[articleId].downvotes) {
             // The user get back only thier stake, the reputation is not modified
@@ -501,6 +498,7 @@ contract TruthHub {
             }
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
+            uint256 additionalTokenAmount;
             uint256 majorityUsers = EnumerableSet.length(
                 articleIdToUpvotersAddresses[articleId]
             );
@@ -529,15 +527,17 @@ contract TruthHub {
                 articleIdToUpvotersAddresses[articleId],
                 msg.sender
             );
-            (, additionalTokens) = Math.tryMul(
+            (, additionalTokenAmount) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmount += additionalTokens;
+            tokenAmount += additionalTokenAmount;
         }
         // MAJORITY -> DOWNVOTES
         // Update author reputation in a negative way
         if (articles[articleId].upvotes < articles[articleId].downvotes) {
+            uint256 etherSum;
+            uint256 etherDuePart;
             // Only the readers who voted downvote will get back the stake + a part of the sum of the ether spent in the upvotes
             // and the ether spent in the pubblication + a proportional amount of platform tokens
             (, etherSum) = Math.tryAdd(
@@ -555,11 +555,13 @@ contract TruthHub {
                 articleIdToEtherSpentToDownvote[articleId][msg.sender],
                 multiplierVeriPerEther
             );
+            updateReaderReputation(msg.sender, true);
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 majorityUsers = EnumerableSet.length(
+            uint256 additionalTokenAmount;
+            uint256 majorityUsers = (EnumerableSet.length(
                 articleIdToDownvotersAddresses[articleId]
-            );
+            ) - 1); // because by construction also the author is here but in this case the author is not a valid claimer
             uint256 minorityUsers = EnumerableSet.length(
                 articleIdToUpvotersAddresses[articleId]
             );
@@ -569,7 +571,7 @@ contract TruthHub {
             );
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
-                    articleIdToDownvotersAddresses[articleId],
+                    articleIdToUpvotersAddresses[articleId],
                     0
                 );
                 if (userToPurge == articles[articleId].author) {
@@ -578,20 +580,20 @@ contract TruthHub {
                     updateReaderReputation(userToPurge, false);
                 }
                 EnumerableSet.remove(
-                    articleIdToDownvotersAddresses[articleId],
+                    articleIdToUpvotersAddresses[articleId],
                     userToPurge
                 );
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
             EnumerableSet.remove(
-                articleIdToUpvotersAddresses[articleId],
+                articleIdToDownvotersAddresses[articleId],
                 msg.sender
             );
-            (, additionalTokens) = Math.tryMul(
+            (, additionalTokenAmount) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmount += additionalTokens;
+            tokenAmount += additionalTokenAmount;
         }
         Address.sendValue(payable(msg.sender), etherAmount);
         //Address.sendValue(payable(msg.sender), tokenAmount);
