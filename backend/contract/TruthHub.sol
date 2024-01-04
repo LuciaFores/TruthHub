@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.20;
 
 /// Address library provides utilities for working with addresses
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 /// import openzeppelin math
 import "@openzeppelin/contracts/utils/math/Math.sol";
+// Import the Veri Token
+import "./VeriToken.sol";
 
 // SAMPLE VARIABLES VALUES:
 // Ethereum Account -> 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
@@ -68,6 +70,9 @@ contract TruthHub {
     /// Variable needed to save the total number of articles published
     uint256 public totalArticles;
 
+    /// Instance of the VeriToken contract
+    VeriToken public immutable contractVeriToken;
+
     /// Struct used to represent an article
     struct Article {
         /// Progressive article id (can be useful for ERC1155)
@@ -100,6 +105,10 @@ contract TruthHub {
         uint256 ethersSpentInUpvotes;
         // Amount of ethers spent in the downvotes
         uint256 ethersSpentInDownvotes;
+        // Amount of VERI spent in the upvotes
+        uint256 veriSpentInUpvotes;
+        // Amount of VERI spent in the downvotes
+        uint256 veriSpentInDownvotes;
         /// Number of total weighted votes, it is a computable variable so it
         /// is not stored in the struct, the formula is the following:
         /// totalWeightVotes = upvotes + downvotes
@@ -124,6 +133,18 @@ contract TruthHub {
     /// It is a mapping (address userEthereumAddress => uint256 etherSpentToDownvote)
     mapping(uint256 => mapping(address => uint256))
         internal articleIdToEtherSpentToDownvote;
+
+    /// Veri spent to upvote
+    /// It is used to store how many tokens an user has spent to upvote an article
+    /// It is a mapping (address userEthereumAddress => uint256 veriSpentToUpvote)
+    mapping(uint256 => mapping(address => uint256))
+        internal articleIdToVeriSpentToUpvote;
+
+    /// Veri spent to downvote
+    /// It is used to store how many tokens an user has spent to downvote an article
+    /// It is a mapping (address userEthereumAddress => uint256 veriSpentToDownvote)
+    mapping(uint256 => mapping(address => uint256))
+        internal articleIdToVeriSpentToDownvote;
 
     /// Mapping needed to register the articles
     /// It is needed to map the articleId of the article to the actual
@@ -224,16 +245,17 @@ contract TruthHub {
 
     /// *** CONTRACT FUNCTIONS *** ///
     /// constructor function
-    constructor() {
+    constructor(VeriToken veriTokenAddress) {
         // Initialize the immutable variables
         etherVotePrice = 1000000000000000 wei; // 0.001 ether
         etherPublishPrice = 10000000000000000 wei; // 0.01 ether
         multiplierVeriPerEther = 1000; // 1 ether = 1000 veri -> 0.01 ether = 10 veri
         amountVeriPerUserPurged = 100000000000000000;
-        endWeightVote = 31; // placeholder value
+        endWeightVote = 50000 * 10 ** 18; // in terms of minimum unit of ERC-20 tokens
         minimumBlockDelta = 23040; // 4 days in terms of blocks
         maximumBlockDelta = 40320; // 7 days in terms of blocks
         totalArticles = 0;
+        contractVeriToken = veriTokenAddress;
     }
 
     /// The following function is used to receive ether
@@ -321,13 +343,20 @@ contract TruthHub {
         return computation(etherVotePrice, reputation);
     }
 
-    function computeVoteWeight(address reader) public view returns (uint256) {
+    function computeMaximumBoost(address user) public view returns (uint256) {
+        uint8 reputation = getReaderReputation(user);
+        return computeVoteWeight(reputation, 0);
+    }
+
+    function computeVoteWeight(
+        uint8 reputation,
+        uint256 tokenSpentToVote
+    ) internal pure returns (uint256) {
         // se reputazione è 100 pago la metà se è 1 pago il doppio se 50 pago prezzo base
         // 1 = 50
         // 51 = 100
         // 101 = 200
         uint256 x;
-        uint8 reputation = getReaderReputation(reader);
         if (reputation <= 51) {
             (, x) = Math.tryAdd(reputation, 49);
         } else {
@@ -338,7 +367,8 @@ contract TruthHub {
             (, mulRes) = Math.tryMul(subRes, 2);
             (, x) = Math.tryAdd(100, mulRes);
         }
-        return x;
+        x = x * 10 ** 19;
+        return x + tokenSpentToVote;
     }
 
     /// The following function is used to publish a new article
@@ -369,7 +399,9 @@ contract TruthHub {
             block.number + minimumBlockDelta, // minimumBlockThreshold
             block.number + maximumBlockDelta, // maximumBlockThreshold
             0, // ethersSpentInUpvotes
-            0 // ethersSpentInDownvotes
+            0, // ethersSpentInDownvotes
+            0, // veriSpentInUpvotes
+            0 // veriSpentInDownvotes
         );
         articleIdToUpvotersAddresses[articleId].add(msg.sender);
         articleIdToDownvotersAddresses[articleId].add(msg.sender);
@@ -383,25 +415,51 @@ contract TruthHub {
     // minimum price needed to express a vote
     // The function also checks if the user has already voted for the article
     // The function also checks if the user is the author of the article
-    // POI AGGIUNGI IL PESO DOVUTO AI TOKENS
     function vote(
         uint256 articleId,
-        bool voteExpressed
+        bool voteExpressed,
+        uint256 tokenSpentToVote
     ) external payable validVoter(articleId) voteOpen(articleId) {
         require(msg.value >= computeVotePrice(msg.sender), "Not enough ether");
+        require(
+            tokenSpentToVote <= computeMaximumBoost(msg.sender),
+            "Too many tokens spent to boost the vote"
+        );
+        if (tokenSpentToVote > 0) {
+            contractVeriToken.transferFrom(
+                msg.sender,
+                address(this),
+                tokenSpentToVote
+            );
+        }
         _setReaderReputation(msg.sender);
+        uint8 reputation = getReaderReputation(msg.sender);
         if (voteExpressed) {
-            articles[articleId].upvotes += computeVoteWeight(msg.sender);
+            articles[articleId].upvotes += computeVoteWeight(
+                reputation,
+                tokenSpentToVote
+            );
             articles[articleId].upvoters += 1;
             articleIdToUpvotersAddresses[articleId].add(msg.sender);
             articleIdToEtherSpentToUpvote[articleId][msg.sender] = msg.value;
             articles[articleId].ethersSpentInUpvotes += msg.value;
+            articleIdToVeriSpentToUpvote[articleId][
+                msg.sender
+            ] += tokenSpentToVote;
+            articles[articleId].veriSpentInUpvotes += tokenSpentToVote;
         } else {
-            articles[articleId].downvotes += computeVoteWeight(msg.sender);
+            articles[articleId].downvotes += computeVoteWeight(
+                reputation,
+                tokenSpentToVote
+            );
             articles[articleId].downvoters += 1;
             articleIdToDownvotersAddresses[articleId].add(msg.sender);
             articleIdToEtherSpentToDownvote[articleId][msg.sender] = msg.value;
             articles[articleId].ethersSpentInDownvotes += msg.value;
+            articleIdToVeriSpentToDownvote[articleId][
+                msg.sender
+            ] += tokenSpentToVote;
+            articles[articleId].veriSpentInDownvotes += tokenSpentToVote;
         }
     }
 
@@ -451,7 +509,8 @@ contract TruthHub {
         uint256 articleId
     ) external validClaimer(articleId) voteClosed(articleId) {
         uint256 etherAmount;
-        uint256 tokenAmount;
+        uint256 tokenAmountToMint;
+        uint256 tokenAmountToGiveBack;
         // No majority
         if (articles[articleId].upvotes == articles[articleId].downvotes) {
             // The user get back only thier stake, the reputation is not modified
@@ -464,8 +523,11 @@ contract TruthHub {
                 etherAmount =
                     articleIdToEtherSpentToUpvote[articleId][msg.sender] +
                     articleIdToEtherSpentToDownvote[articleId][msg.sender];
+                tokenAmountToGiveBack =
+                    articleIdToVeriSpentToUpvote[articleId][msg.sender] +
+                    articleIdToVeriSpentToDownvote[articleId][msg.sender];
             }
-            tokenAmount = 0;
+            tokenAmountToMint = 0;
         }
         // MAJORITY -> UPVOTES
         if (articles[articleId].upvotes > articles[articleId].downvotes) {
@@ -476,7 +538,7 @@ contract TruthHub {
                 etherAmount =
                     articles[articleId].etherSpentToPublish +
                     articles[articleId].ethersSpentInDownvotes;
-                (, tokenAmount) = Math.tryMul(
+                (, tokenAmountToMint) = Math.tryMul(
                     articles[articleId].etherSpentToPublish,
                     multiplierVeriPerEther
                 );
@@ -489,16 +551,20 @@ contract TruthHub {
                 etherAmount = articleIdToEtherSpentToUpvote[articleId][
                     msg.sender
                 ];
-                (, tokenAmount) = Math.tryMul(
+                (, tokenAmountToMint) = Math.tryMul(
                     articleIdToEtherSpentToUpvote[articleId][msg.sender],
                     multiplierVeriPerEther
                 );
+                tokenAmountToGiveBack = articleIdToVeriSpentToUpvote[articleId][
+                    msg.sender
+                ];
                 // The reputation of the reader is increased by 1
                 updateReaderReputation(msg.sender, true);
             }
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 additionalTokenAmount;
+            uint256 additionalTokenAmountToMint;
+            uint256 additionalTokenAmountToGiveBack;
             uint256 majorityUsers = EnumerableSet.length(
                 articleIdToUpvotersAddresses[articleId]
             );
@@ -509,6 +575,11 @@ contract TruthHub {
                 minorityUsers,
                 majorityUsers
             );
+            (, additionalTokenAmountToGiveBack) = Math.tryDiv(
+                articles[articleId].veriSpentInDownvotes,
+                articles[articleId].upvoters
+            );
+            tokenAmountToGiveBack += additionalTokenAmountToGiveBack;
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToDownvotersAddresses[articleId],
@@ -527,11 +598,11 @@ contract TruthHub {
                 articleIdToUpvotersAddresses[articleId],
                 msg.sender
             );
-            (, additionalTokenAmount) = Math.tryMul(
+            (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmount += additionalTokenAmount;
+            tokenAmountToMint += additionalTokenAmountToMint;
         }
         // MAJORITY -> DOWNVOTES
         // Update author reputation in a negative way
@@ -551,14 +622,18 @@ contract TruthHub {
             etherAmount =
                 articleIdToEtherSpentToDownvote[articleId][msg.sender] +
                 etherDuePart;
-            (, tokenAmount) = Math.tryMul(
+            (, tokenAmountToMint) = Math.tryMul(
                 articleIdToEtherSpentToDownvote[articleId][msg.sender],
                 multiplierVeriPerEther
             );
+            tokenAmountToGiveBack = articleIdToVeriSpentToDownvote[articleId][
+                msg.sender
+            ];
             updateReaderReputation(msg.sender, true);
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 additionalTokenAmount;
+            uint256 additionalTokenAmountToMint;
+            uint256 additionalTokenAmountToGiveBack;
             uint256 majorityUsers = (EnumerableSet.length(
                 articleIdToDownvotersAddresses[articleId]
             ) - 1); // because by construction also the author is here but in this case the author is not a valid claimer
@@ -569,6 +644,11 @@ contract TruthHub {
                 minorityUsers,
                 majorityUsers
             );
+            (, additionalTokenAmountToGiveBack) = Math.tryDiv(
+                articles[articleId].veriSpentInUpvotes,
+                articles[articleId].downvoters
+            );
+            tokenAmountToGiveBack += additionalTokenAmountToGiveBack;
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToUpvotersAddresses[articleId],
@@ -589,13 +669,16 @@ contract TruthHub {
                 articleIdToDownvotersAddresses[articleId],
                 msg.sender
             );
-            (, additionalTokenAmount) = Math.tryMul(
+            (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmount += additionalTokenAmount;
+            tokenAmountToMint += additionalTokenAmountToMint;
         }
         Address.sendValue(payable(msg.sender), etherAmount);
-        //Address.sendValue(payable(msg.sender), tokenAmount);
+        contractVeriToken.mint(msg.sender, tokenAmountToMint);
+        if (tokenAmountToGiveBack > 0) {
+            contractVeriToken.transfer(msg.sender, tokenAmountToGiveBack);
+        }
     }
 }
