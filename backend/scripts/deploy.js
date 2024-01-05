@@ -18,12 +18,12 @@ async function deployContract(contractName, args, deployer) {
 	const contract = await Contract.deploy(...args);
 	await contract.waitForDeployment();
 
-	console.log(`Contract address: ${contract.target()}`);
+	console.log("Contract address:", await contract.getAddress())
 	//console.log(`Transaction hash: ${contract.hash}`);
 	console.log(`${contractName} deployed`);
 	console.log();
 	
-	let row = `${contractName} ${contract.address}`;
+	let row = `${contractName} ${contract.getAddress()}`;
 	for (let i = 0; i < args.length; i++) {
 		row += ` "${args[i]}"`;
 	}
@@ -41,21 +41,21 @@ async function main() {
 	
 	const [deployer, ...otherAccounts] = await hre.ethers.getSigners();
 
-	const contractVeriToken = await deployContract('VeriToken', [deployer.address], deployer);
+	const contractVeriToken = await deployContract('VeriToken', [await deployer.getAddress()], deployer);
 
-	const contractArticleNFT = await deployContract('ArticleNFT', [deployer.address], deployer);
+	const contractArticleNFT = await deployContract('ArticleNFT', [await deployer.getAddress()], deployer);
 
-	const contractTruthHub = await deployContract('TruthHub', [contractVeriToken.address, contractArticleNFT.address], deployer);
+	const contractTruthHub = await deployContract('TruthHub', [await contractVeriToken.getAddress(), await contractArticleNFT.getAddress()], deployer);
 
 	console.log(`transferOwnership of VeriToken contract from deployer to TruthHub contract...`);
-	const result1 = await contractVeriToken.transferOwnership(contractTruthHub.address);
-	//console.log(`Transaction hash: ${result1.hash}`);
+	const result1 = await contractVeriToken.transferOwnership(contractTruthHub.getAddress());
+	console.log(`Transaction hash: ${result1.hash}`);
 	console.log(`Transaction successed`);
 	console.log();
 	
 	console.log(`transferOwnership of ArticleNFT contract from deployer to TruthHub contract...`);
-	const result2 = await contractArticleNFT.transferOwnership(contractTruthHub.address);
-	//console.log(`Transaction hash: ${result2.hash}`);
+	const result2 = await contractArticleNFT.transferOwnership(contractTruthHub.getAddress());
+	console.log(`Transaction hash: ${result2.hash}`);
 	console.log(`Transaction successed`);
 	console.log();
 }
