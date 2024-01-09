@@ -12,13 +12,22 @@ import {
 const connectButton = document.getElementById("connectButton");
 const registerButton = document.getElementById("registerButton");
 const authorReputationButton = document.getElementById("getAuthorReputation");
+const computePublishPriceButton = document.getElementById(
+  "computePublishPrice"
+);
 connectButton.onclick = connect;
 registerButton.onclick = registerAuthor;
 
 authorReputationButton.onclick = function () {
-  const authorAddressInput = document.getElementById("addressOfAuthor").value;
+  const authorAddressInput = document.getElementById("ethAddress").value;
   console.log(authorAddressInput);
   getAuthorReputation(authorAddressInput);
+};
+
+computePublishPriceButton.onclick = function () {
+  const authorAddressInput = document.getElementById("ethAddress").value;
+  console.log(authorAddressInput);
+  computePublishPrice(authorAddressInput);
 };
 
 // for testing
@@ -59,15 +68,27 @@ function listenForTransactionMine(
   // we want to listen for this event to happen, and wait for this thing to finish looking
 }
 
+async function ConnectToContract() {
+  // provider / conncetion to the blockchain
+  // take http endpoint and automatically sticks it in ethers for us.
+  // it's like find http endpoint inside metamask, and that's going to be what we are going to use
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  // signer / wallet / someone with some gas
+  // return which wallet we are connect with metamask (provider)
+  const signer = await provider.getSigner();
+  console.log(signer);
+  // contract that we are interacting with
+  const contract = new ethers.Contract(TruthHubAddress, TruthHubAbi, signer);
+  console.log(typeof contract);
+  return { truthHubContract: contract, provider };
+}
+
 async function getReaderReputation(addressOfReader) {
   if (typeof window.ethereum !== "undefined") {
     console.log("Getting Readers Reputation.....");
-    // getting meta mask
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(TruthHubAddress, TruthHubAbi, signer);
+    const { truthHubContract, provider } = await ConnectToContract();
     try {
-      const transactionResponse = await contract.getReaderReputation(
+      const transactionResponse = await truthHubContract.getReaderReputation(
         addressOfReader
       );
       console.log(transactionResponse);
@@ -81,18 +102,9 @@ async function getReaderReputation(addressOfReader) {
 async function getAuthorReputation(addressOfAuthor) {
   if (typeof window.ethereum !== "undefined") {
     console.log("Getting Author Reputation.....");
-    // provider / conncetion to the blockchain
-    // take http endpoint and automatically sticks it in ethers for us.
-    // it's like find http endpoint inside metamask, and that's going to be what we are going to use
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    // signer / wallet / someone with some gas
-    // return which wallet we are connect with metamask (provider)
-    const signer = await provider.getSigner();
-    console.log(signer);
-    // contract that we are interacting with
-    const contract = new ethers.Contract(TruthHubAddress, TruthHubAbi, signer);
+    const { truthHubContract, provider } = await ConnectToContract();
     try {
-      const transactionResponse = await contract.getAuthorReputation(
+      const transactionResponse = await truthHubContract.getAuthorReputation(
         addressOfAuthor
       );
       console.log(transactionResponse);
@@ -111,15 +123,31 @@ async function registerAuthor() {
     let signature = ethers.utils.hexZeroPad(sign, 32);
     let nostrPublicKey = ethers.utils.hexZeroPad(nostrPKey, 32);
     console.log("registering aurthor");
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(TruthHubAddress, TruthHubAbi, signer);
+    const { truthHubContract, provider } = await ConnectToContract();
     try {
-      const transactionResponse = await contract.registerAuthor(
+      const transactionResponse = await truthHubContract.registerAuthor(
         signature,
         nostrPublicKey
       );
       await listenForTransactionMine(transactionResponse, provider);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function computePublishPrice(addressOfAuthor) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Computing author address.....");
+    // getting meta mask
+    const { truthHubContract, provider } = await ConnectToContract();
+    try {
+      const transactionResponse = await truthHubContract.computePublishPrice(
+        addressOfAuthor
+      );
+      // returns a big number
+      console.log(Number(transactionResponse));
+      return transactionResponse;
     } catch (error) {
       console.log(error);
     }
