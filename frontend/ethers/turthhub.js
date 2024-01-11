@@ -20,10 +20,13 @@ const computePublishPriceButton = document.getElementById(
 const publishArticleButton = document.getElementById("publishArticle");
 const getArticleIdButton = document.getElementById("articleId");
 const voteButton = document.getElementById("vote");
+const gettingUpVotersButton = document.getElementById("gettingUpvoters");
+
 // button
 
 // click Event
 connectButton.onclick = connect;
+
 registerButton.onclick = function () {
   const signature = document.getElementById("signature").value;
   const nostrPublicKey = document.getElementById("nostrPublicKey").value;
@@ -61,6 +64,11 @@ voteButton.onclick = function () {
   vote(articleId, voteExpressed, tokenSpentToVote);
 };
 
+gettingUpVotersButton.onclick = function () {
+  const eventIdNostr = document.getElementById("nostrEventId").value;
+  getUpVotersCounts(eventIdNostr);
+};
+
 // click Event
 
 // for testing
@@ -77,15 +85,9 @@ async function connect() {
 function listenForTransactionMine(
   transactionResponse,
   provider,
-  timeout = 120000
+  timeout = 300000
 ) {
   console.log(`Minning ${transactionResponse.hash}...`);
-
-  // timeout of 2 mins, Reject the promise if timeout is reached.
-  const timeoutId = setTimeout(() => {
-    // Reject the promise if the timeout is reached
-    reject(new Error(`Transaction not mined within ${timeout} milliseconds`));
-  }, timeout);
 
   return new Promise((resolve, reject) => {
     //once we got the hash we call the listener function
@@ -96,6 +98,11 @@ function listenForTransactionMine(
       // once transaction is fired, we going to resolve
       resolve();
     });
+    // timeout of 2 mins, Reject the promise if timeout is reached.
+    const timeoutId = setTimeout(() => {
+      // Reject the promise if the timeout is reached
+      reject(new Error(`Transaction not mined within ${timeout} milliseconds`));
+    }, timeout);
   });
   // create a listener for blockchain
   // we want to listen for this event to happen, and wait for this thing to finish looking
@@ -268,6 +275,21 @@ async function getArticleId(eventId) {
   }
 }
 
+async function getUpVotersCounts(eventId) {
+  const article_Id = getArticleId(eventId);
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Getting up Voters Counts");
+    const { truthHubContract } = await ConnectToContract();
+    try {
+      const transactionResponse = await truthHubContract.articles(article_Id);
+      const upvoters = transactionResponse.upvoters;
+      console.log(Number(upvoters));
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
 async function vote(articleId, voteExpressed, tokenSpentToVote) {
   if (typeof window.ethereum !== "undefined") {
     console.log("Voting for Ariticle");
@@ -280,10 +302,9 @@ async function vote(articleId, voteExpressed, tokenSpentToVote) {
         articleId,
         voteExpressed,
         tokenSpentToVote,
-        { value: votePrice, gasLimit: 200000 }
+        { value: votePrice, gasLimit: 210000 }
       );
       await listenForTransactionMine(transactionResponse, provider);
-      // returns a big number
       console.log(transactionResponse);
     } catch (error) {
       console.log(error);
@@ -291,4 +312,50 @@ async function vote(articleId, voteExpressed, tokenSpentToVote) {
   }
 }
 
-// check the upvote of article: "b9e0d7d561a200a103766633390a2fe363a9a0803e4824a3761a3b5cc0340798"
+async function claimReward(articleId) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Claim Rewards...");
+    const { truthHubContract, provider, accountAddress } =
+      await ConnectToContract();
+    try {
+      const transactionResponse = truthHubContract.claimReward(articleId);
+      await listenForTransactionMine(transactionResponse, provider);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function mintArticleNFT(articleId, nftAmount) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Mint Article NFT.....");
+    const { truthHubContract, provider } = await ConnectToContract();
+    try {
+      const transactionResponse = truthHubContract.mintArticleNFT(
+        articleId,
+        nftAmount
+      );
+      await listenForTransactionMine(transactionResponse, provider);
+      console.log(transactionResponse);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function buyArticleNft(articleId, nftAmount) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Buying Article NFT.....");
+    const { truthHubContract, provider } = await ConnectToContract();
+    try {
+      const transactionResponse = truthHubContract.buyArticleNft(
+        articleId,
+        nftAmount
+      );
+      await listenForTransactionMine(transactionResponse, provider);
+      console.log(transactionResponse);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
