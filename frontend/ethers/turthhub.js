@@ -9,14 +9,26 @@ import {
 } from "./constants.js";
 
 // for testing
+
+// button
 const connectButton = document.getElementById("connectButton");
 const registerButton = document.getElementById("registerButton");
 const authorReputationButton = document.getElementById("getAuthorReputation");
 const computePublishPriceButton = document.getElementById(
   "computePublishPrice"
 );
+const publishArticleButton = document.getElementById("publishArticle");
+const getArticleIdButton = document.getElementById("articleId");
+const voteButton = document.getElementById("vote");
+// button
+
+// click Event
 connectButton.onclick = connect;
-registerButton.onclick = registerAuthor;
+registerButton.onclick = function () {
+  const signature = document.getElementById("signature").value;
+  const nostrPublicKey = document.getElementById("nostrPublicKey").value;
+  registerAuthor(signature, nostrPublicKey);
+};
 
 authorReputationButton.onclick = function () {
   const authorAddressInput = document.getElementById("ethAddress").value;
@@ -26,9 +38,30 @@ authorReputationButton.onclick = function () {
 
 computePublishPriceButton.onclick = function () {
   const authorAddressInput = document.getElementById("ethAddress").value;
-  console.log(authorAddressInput);
   computePublishPrice(authorAddressInput);
 };
+
+publishArticleButton.onclick = function () {
+  const eventIdNostr = document.getElementById("nostrEventId").value;
+  publishArticle(eventIdNostr);
+};
+
+getArticleIdButton.onclick = function () {
+  const eventIdNostr = document.getElementById("nostrEventId").value;
+  getArticleId(eventIdNostr);
+};
+
+voteButton.onclick = function () {
+  const eventIdNostr = document.getElementById("nostrEventId").value;
+  const articleId = getArticleId(eventIdNostr);
+  const votecheck = document.getElementById("voteExpressed");
+  const voteExpressed = votecheck.checked;
+  console.log(voteExpressed);
+  const tokenSpentToVote = document.getElementById("numberOfToken").value;
+  vote(articleId, voteExpressed, tokenSpentToVote);
+};
+
+// click Event
 
 // for testing
 async function connect() {
@@ -76,11 +109,11 @@ async function ConnectToContract() {
   // signer / wallet / someone with some gas
   // return which wallet we are connect with metamask (provider)
   const signer = await provider.getSigner();
-  console.log(signer);
+  // Address of the current account that is connected with MetaMask
+  const accountAddress = signer.getAddress();
   // contract that we are interacting with
   const contract = new ethers.Contract(TruthHubAddress, TruthHubAbi, signer);
-  console.log(typeof contract);
-  return { truthHubContract: contract, provider };
+  return { truthHubContract: contract, provider, accountAddress };
 }
 
 async function getReaderReputation(addressOfReader) {
@@ -115,11 +148,12 @@ async function getAuthorReputation(addressOfAuthor) {
   }
 }
 
-async function registerAuthor() {
+async function registerAuthor(signa, nostrPubKey) {
   // using 32 Byte hex Public key, for example:4befe60a9d2878f23a4517e72ecab8a5fe2bc9ab4ec807679e1357f407d680e7
-  const sign = "0x" + document.getElementById("signature").value;
-  const nostrPKey = "0x" + document.getElementById("nostrPublicKey").value;
+  const sign = "0x" + signa;
+  const nostrPKey = "0x" + nostrPubKey;
   if (typeof window.ethereum !== "undefined") {
+    console.log("registring Aurthor......");
     let signature = ethers.utils.hexZeroPad(sign, 32);
     let nostrPublicKey = ethers.utils.hexZeroPad(nostrPKey, 32);
     console.log("registering aurthor");
@@ -138,9 +172,9 @@ async function registerAuthor() {
 
 async function computePublishPrice(addressOfAuthor) {
   if (typeof window.ethereum !== "undefined") {
-    console.log("Computing author address.....");
+    console.log("Computing publish price.....");
     // getting meta mask
-    const { truthHubContract, provider } = await ConnectToContract();
+    const { truthHubContract } = await ConnectToContract();
     try {
       const transactionResponse = await truthHubContract.computePublishPrice(
         addressOfAuthor
@@ -153,3 +187,108 @@ async function computePublishPrice(addressOfAuthor) {
     }
   }
 }
+
+async function computeVotePrice(addressOfReader) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Computing vote priece.....");
+    // getting meta mask
+    const { truthHubContract } = await ConnectToContract();
+    try {
+      const transactionResponse = await truthHubContract.computeVotePrice(
+        addressOfReader
+      );
+      // returns a big number
+      console.log(Number(transactionResponse));
+      return transactionResponse;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function computeMaximumBoost(addressOfUser) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Computing Maximum Boost.....");
+    // getting meta mask
+    const { truthHubContract } = await ConnectToContract();
+    try {
+      const transactionResponse = await truthHubContract.computeMaximumBoost(
+        addressOfUser
+      );
+      // returns a big number
+      console.log(Number(transactionResponse));
+      return transactionResponse;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function publishArticle(eventId) {
+  const event = "0x" + eventId;
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Publishing Ariticle");
+    let event_id = ethers.utils.hexZeroPad(event, 32);
+    // getting meta mask
+    const { truthHubContract, provider, accountAddress } =
+      await ConnectToContract();
+    const publishPriece = await computePublishPrice(accountAddress);
+    try {
+      const transactionResponse = await truthHubContract.publishArticle(
+        event_id,
+        { value: publishPriece }
+      );
+      await listenForTransactionMine(transactionResponse, provider);
+      // returns a big number
+      console.log(transactionResponse);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+// get the article ID
+async function getArticleId(eventId) {
+  const event = "0x" + eventId;
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Getting article Id...");
+    let event_id = ethers.utils.hexZeroPad(event, 32);
+    // getting meta mask
+    const { truthHubContract } = await ConnectToContract();
+    try {
+      const transactionResponse = await truthHubContract.eventIdToArticleId(
+        event_id
+      );
+      // returns a big number
+      console.log(Number(transactionResponse));
+      return transactionResponse;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+async function vote(articleId, voteExpressed, tokenSpentToVote) {
+  if (typeof window.ethereum !== "undefined") {
+    console.log("Voting for Ariticle");
+    // getting meta mask
+    const { truthHubContract, provider, accountAddress } =
+      await ConnectToContract();
+    const votePrice = await computeVotePrice(accountAddress);
+    try {
+      const transactionResponse = await truthHubContract.vote(
+        articleId,
+        voteExpressed,
+        tokenSpentToVote,
+        { value: votePrice, gasLimit: 200000 }
+      );
+      await listenForTransactionMine(transactionResponse, provider);
+      // returns a big number
+      console.log(transactionResponse);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+}
+
+// check the upvote of article: "b9e0d7d561a200a103766633390a2fe363a9a0803e4824a3761a3b5cc0340798"
