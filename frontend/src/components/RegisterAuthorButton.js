@@ -1,13 +1,12 @@
 import { Web3Button } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
+import converter from "bech32-converting";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
 export default function RegisterAuthorButton({signature, nostrPublicKey}) {
     
-    function castToBytes32String(str) {
-        const strToHex = "0x" + str;
-        const strTransformed = ethers.utils.hexZeroPad(strToHex, 32)
-        return strTransformed;
+    function bech32ToHex(str, prefix = '') {
+        return converter(prefix).toHex(str);
     }
 
     return(
@@ -18,8 +17,9 @@ export default function RegisterAuthorButton({signature, nostrPublicKey}) {
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            await contract.call("registerAuthor", [castToBytes32String(signature), castToBytes32String(nostrPublicKey)]);
+            await contract.call("registerAuthor", [bech32ToHex(signature), bech32ToHex(nostrPublicKey, 'npub')]);
             console.log("Welcome to TruthHub as a new author!");
+           //console.log("nostrPublicKey: " + nostrPublicKey, "bech32ToHex(nostrPublicKey, 'npub'): " + bech32ToHex(nostrPublicKey, 'npub'));
         }}
         >
             Register Author!

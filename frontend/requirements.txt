@@ -14,6 +14,9 @@ install @tailwindcss/typography plugin ->
 install flowbite plugin ->
 	npm install flowbite flowbite-react
 	
+install bech-32 converting ->
+	npm intall bech32-converting
+	
 add the following to 'tailwind.config.js'->
 	module.exports = {
   		//...
