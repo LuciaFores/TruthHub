@@ -12,9 +12,6 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 const relayUrls = [
 	"wss://relay.damus.io",
-	"wss://nostr-pub.wellorder.net",
-	"wss://nostr.mom",
-	"wss://nostr.slothy.win",
   ];
 
 root.render(
