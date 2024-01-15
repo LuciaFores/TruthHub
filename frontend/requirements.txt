@@ -47,3 +47,9 @@ in order to use daisyUI themes add the following to 'tailwind.config.js' before 
 	
 install react-nostr ->
 	npm install react-nostr
+	
+install fontawesome
+	npm i --save @fortawesome/fontawesome-svg-core
+	npm install --save @fortawesome/free-solid-svg-icons
+	npm install --save @fortawesome/react-fontawesome
+
