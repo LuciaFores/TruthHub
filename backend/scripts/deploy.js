@@ -1,5 +1,6 @@
 const hre = require("hardhat");
 const fs = require('fs');
+const execSync = require('child_process').execSync;
 
 /**
  * Deploys a contract with the given name and arguments, using the provided deployer as the signer.
@@ -23,7 +24,7 @@ async function deployContract(contractName, args, deployer) {
 	console.log(`${contractName} deployed`);
 	console.log();
 	
-	let row = `${contractName} ${contract.getAddress()}`;
+	let row = `${contractName} ${await contract.getAddress()}`;
 	for (let i = 0; i < args.length; i++) {
 		row += ` "${args[i]}"`;
 	}
@@ -31,6 +32,21 @@ async function deployContract(contractName, args, deployer) {
 	
 	return contract;
 }
+
+/*
+async function verifyContract(contractName, contractAddress, args) {
+	console.log(`${contractName} is verifying...`);
+	command = `npx hardhat verify --network sepolia ${contractAddress}`;
+	for (let i = 0; i < args.length; i++) {
+		command += ` "${args[i]}"`;
+	}
+	execSync(command, { encoding: 'utf-8' });
+	console.log(`${contractName} verified`);
+	const etherScanUrl = `https://sepolia.etherscan.io/address/${contractAddress}#code`;
+	console.log(`Check ${etherScanUrl} to see the code`);
+
+}
+*/
 
 /**
  */
@@ -42,10 +58,13 @@ async function main() {
 	const [deployer, ...otherAccounts] = await hre.ethers.getSigners();
 
 	const contractVeriToken = await deployContract('VeriToken', [await deployer.getAddress()], deployer);
+	//await verifyContract('VeriToken', await contractVeriToken.getAddress(), [await deployer.getAddress()]);
 
 	const contractArticleNFT = await deployContract('ArticleNFT', [await deployer.getAddress()], deployer);
+	//await verifyContract('ArticleNFT', await contractArticleNFT.getAddress(), [await deployer.getAddress()]);
 
 	const contractTruthHub = await deployContract('TruthHub', [await contractVeriToken.getAddress(), await contractArticleNFT.getAddress()], deployer);
+	//await verifyContract('TruthHub', await contractTruthHub.getAddress(), [await contractVeriToken.getAddress(), await contractArticleNFT.getAddress()]);
 
 	console.log(`transferOwnership of VeriToken contract from deployer to TruthHub contract...`);
 	const result1 = await contractVeriToken.transferOwnership(contractTruthHub.getAddress());

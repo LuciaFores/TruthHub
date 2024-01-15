@@ -10,7 +10,7 @@ function App() {
 	return (
 		<div data-theme='synthwave'>
 			<Navbar/>
-			<FunctionTest/>
+			<Home/>
 		</div>
 	);
 }
