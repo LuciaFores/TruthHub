@@ -4,7 +4,7 @@ import {faHeart} from "@fortawesome/free-solid-svg-icons";
 export default function Footer(){
     return(
         <div>
-            <footer className="footer footer-center p-4 bg-base-300 text-base-content">
+            <footer className="footer footer-center p-4 bg-base-300 text-base-content mt-auto">
                 <aside>
                     <p>Made with <FontAwesomeIcon icon={faHeart} /> by Weidong Cai, Lucia Fores and Elena Jiang</p>
                 </aside>

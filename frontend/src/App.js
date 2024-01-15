@@ -1,9 +1,11 @@
 import React from "react";
 
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import RegisterAuthor from "./pages/RegisterAuthor";
 import Articles from "./pages/Articles";
+import WriteArticle from "./pages/WriteArticle";
 import FunctionTest from "./pages/FunctionTest";
 
 
@@ -12,6 +14,7 @@ function App() {
 		<div data-theme='synthwave'>
 			<Navbar/>
 			<RegisterAuthor/>
+      <Footer/>
 		</div>
 	);
 }

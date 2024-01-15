@@ -3,7 +3,7 @@ import { useConnectionStatus } from "@thirdweb-dev/react";
 import RegisterAuthorButton from "../components/RegisterAuthorButton";
 import registration_author from "../images/registration_author.svg";
 
-export default function FunctionTest() {
+export default function RegisterAuthor() {
     const [nostrPubKeyValue, setnostrPubKeyValue] = useState('');
     const [signatureValue, setSignatureValue] = useState('');
 
@@ -20,7 +20,7 @@ export default function FunctionTest() {
 
 
     return(
-        <div>
+        <div className="flex flex-col min-h-screen">
             <div>
                 <p className="flex text-8xl font-medium my-10 place-content-center">Become a TruthHub author!</p>
             </div>
