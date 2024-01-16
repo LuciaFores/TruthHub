@@ -13,11 +13,26 @@ function App() {
 	return (
 		<div data-theme='synthwave'>
 			<Navbar/>
-			<RegisterAuthor/>
+			<WriteArticle/>
       <Footer/>
 		</div>
 	);
 }
+
+/*
+{
+  "id": "3ced97b0561b9660a5d32af357cb6053350fb3ac3224cc459b06472b9394719e",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1705141340,
+  "content": "prova ",
+  "tags": [],
+  "sig": "be4c97c0cd35220a047e3aa95239e01edd1f985d02f624b201dbb8d200bcc406ddf16f75a0a84a489800343709982fd4426861f89ac8b0db2e038628eaca85df",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
+*/
 
 export default App;
 

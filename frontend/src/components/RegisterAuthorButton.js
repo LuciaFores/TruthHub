@@ -1,5 +1,4 @@
 import { Web3Button } from "@thirdweb-dev/react";
-import { ethers } from "ethers";
 import converter from "bech32-converting";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
@@ -19,7 +18,6 @@ export default function RegisterAuthorButton({signature, nostrPublicKey}) {
         action={async (contract) => {
             await contract.call("registerAuthor", [bech32ToHex(signature), bech32ToHex(nostrPublicKey, 'npub')]);
             console.log("Welcome to TruthHub as a new author!");
-           //console.log("nostrPublicKey: " + nostrPublicKey, "bech32ToHex(nostrPublicKey, 'npub'): " + bech32ToHex(nostrPublicKey, 'npub'));
         }}
         >
             Register Author!
