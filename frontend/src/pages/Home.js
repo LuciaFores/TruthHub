@@ -14,7 +14,7 @@ export default function Home() {
                         <span className="bg-gradient-to-r from-violet-400 via-rose-400 to-amber-400 bg-clip-text text-transparent"> seek truth</span>
                     </p>
                     <p className="text-xl my-10 font-light">
-                        By combining the stregths of Ethereum and Nostr, TruthHub will provide a censorship resitant solution in which the community will help to idenitfy fake news.
+                        By combining the stregths of Ethereum and Nostr, TruthHub will provide a censorship resistant solution in which the community will help to identify fake news.
                     </p>
                 </div>
                 <div className="grid mx-auto my-8">
