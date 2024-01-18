@@ -10,6 +10,8 @@ export default function ClaimReward({articleId}) {
             await contract.call("claimReward", [articleId]);
             console.log("Congrats on claiming your reward!");
         }}
+        onSuccess={(success) => alert("Congrats on claiming your reward!")}
+        onError={(error) => alert(error)}
         >
             Claim your reward!
         </Web3Button>

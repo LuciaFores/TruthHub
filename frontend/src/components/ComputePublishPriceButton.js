@@ -1,7 +1,7 @@
 import { Web3Button, useAddress } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
-export default function ComputePublishPrice() {
+export default function ComputePublishPrice({ setPublishPrice }) {
 
     const authorAddress = useAddress();
 
@@ -10,8 +10,8 @@ export default function ComputePublishPrice() {
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            const result = await contract.call("computePublishPrice", [authorAddress]);
-            console.log("In order to publish an article you must pay at least: ", Number(result), " Wei");
+            const computedPublishPrice = await contract.call("computePublishPrice", [authorAddress]);
+            setPublishPrice(Number(computedPublishPrice));
         }}
         >
             Compute your publication price!

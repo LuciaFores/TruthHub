@@ -1,8 +1,8 @@
 import placeholder from "../images/placeholder.jpeg";
 import Card from "../components/Card";
-import { author_src, author_title, author_description, author_button_text } from "../cards_constants/author_functionalities_card";
-import { reader_src, reader_title, reader_description, reader_button_text } from "../cards_constants/reader_functionalities_card";
-import { nft_src, nft_title, nft_description, nft_button_text } from "../cards_constants/nft_functionalities_card";
+import { author_src, author_title, author_description, author_button_text, author_button_link } from "../cards_constants/author_functionalities_card";
+import { reader_src, reader_title, reader_description, reader_button_text, reader_button_link } from "../cards_constants/reader_functionalities_card";
+import { nft_src, nft_title, nft_description, nft_button_text, nft_button_link } from "../cards_constants/nft_functionalities_card";
 
 export default function Home() {
     return(
@@ -24,9 +24,9 @@ export default function Home() {
             <div className="mx-20">
                 <p className="text-4xl font-medium">What will you be able to do?</p>
                 <div className="container grid grid-cols-3 py-8 mx-6 my-4">
-                    <Card src={author_src} title={author_title} description={author_description} button_text={author_button_text}/>
-                    <Card src={reader_src} title={reader_title} description={reader_description} button_text={reader_button_text}/>
-                    <Card src={nft_src} title={nft_title} description={nft_description} button_text={nft_button_text}/>
+                    <Card src={author_src} title={author_title} description={author_description} button_text={author_button_text} link={author_button_link}/>
+                    <Card src={reader_src} title={reader_title} description={reader_description} button_text={reader_button_text} link={reader_button_link}/>
+                    <Card src={nft_src} title={nft_title} description={nft_description} button_text={nft_button_text} link={nft_button_link}/>
                 </div>
             </div>
         </div>

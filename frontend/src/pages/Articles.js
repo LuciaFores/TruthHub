@@ -1,7 +1,12 @@
 import { useNostrEvents } from "nostr-react";
+import { useConnectionStatus } from "@thirdweb-dev/react";
 
 
 export default function Articles() {
+
+    const connectionStatus = useConnectionStatus();
+    const isWalletConnected = connectionStatus === "connected";
+
     const { events } = useNostrEvents({
         filter: {
           authors: [
@@ -14,7 +19,9 @@ export default function Articles() {
       });
     
     return(
-        <>
+        <div className="flex flex-col min-h-screen">
+        {isWalletConnected ? (
+            <>
             {events.map((event) => (
                 <div className="card w-auto bg-neutral text-neutral-content py-10">
                     <div className="card-body items-left text-left">
@@ -39,15 +46,18 @@ export default function Articles() {
                             </div>                           
                             <div className="divider"></div> 
                             <div className="grid h-20 flex-grow card bg-base-300 rounded-box place-items-center">
-                                <h2 className="card-title">Article Title</h2>
+                                <h2 className="card-title">Event id: {event.id}</h2>
                             </div>
                        </div>
-                        <p key={event.id}>{event.content}</p>
+                        <p className="mt-10" key={event.id}>{event.content}</p>
                     </div>
                 </div>
             ))}
-        </>
-        
+            </>
+        ) : (
+            <p className="flex text-4xl font-medium mx-auto mt-10">Connect your wallet to read articles!</p>
+            )}
+        </div>        
     );
 }
 

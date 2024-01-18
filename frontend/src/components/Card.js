@@ -1,4 +1,4 @@
-export default function Card({src, title, description, button_text}){
+export default function Card({src, title, description, button_text, link}){
     return(
         <div className="card w-96 bg-purple-500 shadow-xl card-bordered">
             <figure><img src={src} className="pt-4 w-72 h-72"/></figure>
@@ -7,7 +7,9 @@ export default function Card({src, title, description, button_text}){
                 <p>{description}</p>
                 <div className="card-actions justify-end">
                     {/* da modificare con il bottone specifico di routing verso la pagina specifica */}
-                    <button className="btn btn-primary">{button_text}</button>
+                    <a href={link}>
+                        <button className="btn btn-primary">{button_text}</button>
+                    </a>
                 </div>
             </div>
         </div>

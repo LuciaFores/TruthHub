@@ -1,7 +1,7 @@
 import { Web3Button } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
-export default function PublishArticle({eventId, publishCost}) {
+export default function PublishArticleButton({eventId, publishCost}) {
 
     function eventIdToHex(eventId) {
         return "0x" + eventId;
@@ -14,8 +14,9 @@ export default function PublishArticle({eventId, publishCost}) {
         action={async (contract) => {
             const overrides = {value : publishCost};
             await contract.call("publishArticle", [eventIdToHex(eventId)], overrides);
-            console.log("Congrats on publishing your article!");
         }}
+        onSuccess={(success) => alert("Congrats on publishing your article!")}
+        onError={(error) => alert(error)}
         >
             Publish your article!
         </Web3Button>

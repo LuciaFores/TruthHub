@@ -50,6 +50,9 @@ install react-nostr ->
 	
 install fontawesome
 	npm i --save @fortawesome/fontawesome-svg-core
+	
+install react-router
+	npm i -D react-router-dom 
 	npm install --save @fortawesome/free-solid-svg-icons
 	npm install --save @fortawesome/react-fontawesome
 

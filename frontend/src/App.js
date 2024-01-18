@@ -1,22 +1,27 @@
 import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import RegisterAuthor from "./pages/RegisterAuthor";
 import Articles from "./pages/Articles";
-import WriteArticle from "./pages/WriteArticle";
+import PublishArticle from "./pages/PublishArticle";
 import UserProfile from "./pages/UserProfile";
 import FunctionTest from "./pages/FunctionTest";
 
 
 function App() {
 	return (
-		<div data-theme='synthwave'>
-			<Navbar/>
-			<UserProfile/>
-      <Footer/>
-		</div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home/>}/>
+          <Route index element={<Home />} />
+          <Route path="register" element={<RegisterAuthor/>}/>
+          <Route path="articles" element={<Articles/>}/>
+          <Route path="publish" element={<PublishArticle/>}/>
+          <Route path="profile" element={<UserProfile/>}/>          
+      </Routes>
+    </BrowserRouter>
 	);
 }
 

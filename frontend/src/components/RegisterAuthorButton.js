@@ -16,9 +16,10 @@ export default function RegisterAuthorButton({signature, nostrPublicKey}) {
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            await contract.call("registerAuthor", [bech32ToHex(signature), bech32ToHex(nostrPublicKey, 'npub')]);
-            console.log("Welcome to TruthHub as a new author!");
+            await contract.call("registerAuthor", [bech32ToHex(signature, 'npub'), bech32ToHex(nostrPublicKey, 'npub')]);
         }}
+        onSuccess={(success) => alert("Congrats on registering as an author!")}
+        onError={(error) => alert(error)}
         >
             Register Author!
         </Web3Button>
