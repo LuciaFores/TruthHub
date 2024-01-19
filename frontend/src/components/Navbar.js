@@ -16,24 +16,24 @@ export default function Navbar() {
                         <span className="text-l font-lexend">Author Registration</span>
                     </button>
                 </a>
-                <a href="articles">
-                    <button className="btn btn-ghost">
-                        <span className="text-l font-lexend">Articles</span>
-                    </button>
-                </a>
-                <a href="profile">
-                    <button className="btn btn-ghost">
-                        <span className="text-l font-lexend">User Profile</span>
-                    </button>
-                </a>
                 <a href="publish">
                     <button className="btn btn-ghost">
                         <span className="text-l font-lexend">Publish Article</span>
                     </button>
                 </a>
+                <a href="articles">
+                    <button className="btn btn-ghost">
+                        <span className="text-l font-lexend">Read Articles</span>
+                    </button>
+                </a>
                 <a href="nft">
                     <button className="btn btn-ghost">
                         <span className="text-l font-lexend">NFTs</span>
+                    </button>
+                </a>
+                <a href="profile">
+                    <button className="btn btn-ghost">
+                        <span className="text-l font-lexend">User Profile</span>
                     </button>
                 </a>
             </div>

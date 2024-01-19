@@ -28,6 +28,8 @@ contract TruthHub is IERC1155Receiver {
     using Address for address;
     /// Using EnumerableSet for EnumerableSet.AddressSet type
     using EnumerableSet for EnumerableSet.AddressSet;
+    /// Using UintSet for EnumerableSet.UintSet type
+    using EnumerableSet for EnumerableSet.UintSet;
 
     /// *** CONTRACT VARIABLES *** ///
 
@@ -131,6 +133,9 @@ contract TruthHub is IERC1155Receiver {
         /// is not stored in the struct, the formula is the following:
         /// totalWeightVotes = upvotes + downvotes
     }
+
+    /// Set of articles that has been voted by a user
+    mapping(address => EnumerableSet.UintSet) internal addressToArticlesVoted;
 
     /// Set of upvoters' addresses
     mapping(uint256 => EnumerableSet.AddressSet)
@@ -339,6 +344,12 @@ contract TruthHub is IERC1155Receiver {
         return authorsReputations[user];
     }
 
+    function getReaderArticlesVoted(
+        address reader
+    ) public view returns (uint256[] memory) {
+        return EnumerableSet.values(addressToArticlesVoted[reader]);
+    }
+
     /// The following function is used to register a new author
     /// In order to do that the cryptohgraphic proof must be valid
     /// The idea is the following:
@@ -516,6 +527,7 @@ contract TruthHub is IERC1155Receiver {
             ] += tokenSpentToVote;
             articles[articleId].veriSpentInDownvotes += tokenSpentToVote;
         }
+        EnumerableSet.add(addressToArticlesVoted[msg.sender], articleId);
     }
 
     function updateReaderReputation(address user, bool direction) internal {
@@ -583,6 +595,10 @@ contract TruthHub is IERC1155Receiver {
                 tokenAmountToGiveBack =
                     articleIdToVeriSpentToUpvote[articleId][msg.sender] +
                     articleIdToVeriSpentToDownvote[articleId][msg.sender];
+                EnumerableSet.remove(
+                    addressToArticlesVoted[msg.sender],
+                    articleId
+                );
             }
             tokenAmountToMint = 0;
         }
@@ -617,6 +633,10 @@ contract TruthHub is IERC1155Receiver {
                 ];
                 // The reputation of the reader is increased by 1
                 updateReaderReputation(msg.sender, true);
+                EnumerableSet.remove(
+                    addressToArticlesVoted[msg.sender],
+                    articleId
+                );
             }
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
@@ -645,6 +665,10 @@ contract TruthHub is IERC1155Receiver {
                 EnumerableSet.remove(
                     articleIdToDownvotersAddresses[articleId],
                     userToPurge
+                );
+                EnumerableSet.remove(
+                    addressToArticlesVoted[userToPurge],
+                    articleId
                 );
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
@@ -676,6 +700,7 @@ contract TruthHub is IERC1155Receiver {
                 msg.sender
             ];
             updateReaderReputation(msg.sender, true);
+            EnumerableSet.remove(addressToArticlesVoted[msg.sender], articleId);
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
             uint256 majorityUsers = (EnumerableSet.length(
@@ -705,6 +730,10 @@ contract TruthHub is IERC1155Receiver {
                 EnumerableSet.remove(
                     articleIdToUpvotersAddresses[articleId],
                     userToPurge
+                );
+                EnumerableSet.remove(
+                    addressToArticlesVoted[userToPurge],
+                    articleId
                 );
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority

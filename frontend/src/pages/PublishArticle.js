@@ -1,29 +1,31 @@
 import { useState } from "react";
-import { useConnectionStatus } from "@thirdweb-dev/react";
+import { useConnectionStatus, useAddress, useContract, useContractRead } from "@thirdweb-dev/react";
+import { TruthHubAddress } from "../contracts";
 import write_article from "../images/write_article.svg";
 import PublishArticleButton from "../components/PublishArticleButton";
-import ComputePublishPrice from "../components/ComputePublishPriceButton";
 
 export default function PublishArticle(){
+    const { contract } = useContract(TruthHubAddress);
+
     const [articleEventIdValue, setEventIdValue] = useState('');
-    const [publishCostValue, setPublishCostValue] = useState('');
+    const [publishPriceValue, setPublishPriceValue] = useState('');
 
 
     const handleEventIdChange = (e) => {
         setEventIdValue(e.target.value);
     };
 
-    const handlePublishCostChange = (e) => {
-        setPublishCostValue(e.target.value);
+    const handlePublishPriceChange = (e) => {
+        setPublishPriceValue(Number(e.target.value) * 10 ** 18);
     };
-
-    const [publishPrice, setPublishPrice] = useState(0);
-
-    const isPriceComputed = publishPrice !== 0;
 
 
     const connectionStatus = useConnectionStatus();
     const isWalletConnected = connectionStatus === "connected";
+
+    const address = useAddress();
+
+    const {data: pP, isLoading: isLoadingPP} = useContractRead(contract, "computePublishPrice", [address]);
 
     return(
         <div className="flex flex-col min-h-screen">
@@ -48,21 +50,17 @@ export default function PublishArticle(){
                 <div className="container mx-20">
                     <div className="grid grid-rows-2">
                         {/*Row 1*/}
-                        <div className="grid grid-cols-3">
-                            {/*Col 1*/}
-                            <div className="my-10">
-                                <ComputePublishPrice setPublishPrice={setPublishPrice}/>
-                            </div>
+                        <div className="grid grid-cols-2">
                             {/*Col 2*/}
                             <div className="flex text-l my-10">
-                                { isPriceComputed ? (
+                                { isLoadingPP ? (
                                 <p>
-                                    If you want to publish an article on TruthHub you need to pay at least {publishPrice} Wei <br/>
-                                    You can also pay more if you want, just insert the amount you want to pay below.
+                                Loading Publish Price...
                                 </p>
                                 ) : (
                                 <p>
-                                    Click on the button to compute the minimum amount you need to pay to publish an article on TruthHub!
+                                If you want to publish an article on TruthHub you need to pay at least {Number(pP) * 10 ** -18} Ethers <br/>
+                                You can also pay more if you want, just insert the amount you want to pay below.
                                 </p>
                                 )}
                             </div>
@@ -82,14 +80,14 @@ export default function PublishArticle(){
                             <div>
                             <label className="form-control w-full max-w-xs">
                                 <div className="label">
-                                    <span className="label-text">Insert the amount you want to pay (in Wei)</span>
+                                    <span className="label-text">Insert the amount of Ethers you want to pay</span>
                                 </div>
-                                <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Cost" value={publishCostValue} onChange={handlePublishCostChange}/>
+                                <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Cost" value={publishPriceValue} onChange={handlePublishPriceChange}/>
                             </label>
                             </div>
                             {/*Col 3*/}
                             <div className="flex place-content-center mt-8 mb-10 h-12">
-                                <PublishArticleButton eventId={articleEventIdValue} publishCost={publishCostValue}/> 
+                                <PublishArticleButton eventId={articleEventIdValue} publishCost={publishPriceValue}/> 
                             </div>
                         </div> 
                     </div>                      

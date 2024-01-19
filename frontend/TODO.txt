@@ -14,3 +14,10 @@ Gestisci la compravendita di NFT, anche in questo caso vedi di fare una prova pe
 e quindi può mintare NFT
 
 Deve esserci anche una prova in cui si può fare boost del voto e si deve far vedere che a reputazione modificata si modificano anche i parametri dello user profile
+
+
+Per i sequence diagram è necessario fare tutte le funzioni o solo gli use case principali? (ad esempio dovrei mettere le funzioni di compute publish price o roba del genere?
+
+
+ontrolla h tutt l struttur ati siano visualizzat a qualh part
+ontrolla s l'vnt i sist su nostr  s l'vnt i è i un autor l sistma

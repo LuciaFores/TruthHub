@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
-import StatisticButton from "../components/StatisticsButton";
+import { useConnectionStatus, useAddress, useContract, useContractRead } from "@thirdweb-dev/react";
+import { TruthHubAddress } from "../contracts";
 import ClaimReward from "../components/ClaimRewardButton";
 import UserTableInformations from "../components/UserTableInformations";
 
 export default function UserProfile() {
+    const { contract } = useContract(TruthHubAddress);
+
     const [articleIdValue, setArticleIdValue] = useState('');
 
     const handleArticleIdChange = (e) => {
@@ -16,13 +18,19 @@ export default function UserProfile() {
 
     const address = useAddress();
 
-    // State to store statistics
-    const [statistics, setStatistics] = useState([]);
+    const {data: aR, isLoading: isLoadingAR} = useContractRead(contract, "getAuthorReputation", [address]);
+    const {data: rR, isLoading: isLoadingrR} = useContractRead(contract, "getReaderReputation", [address]);
+    const {data: pP, isLoading: isLoadingPP} = useContractRead(contract, "computePublishPrice", [address]);
+    const {data: vP, isLoading: isLoadingVP} = useContractRead(contract, "computeVotePrice", [address]);
+    const {data: mB, isLoading: isLoadingMB} = useContractRead(contract, "computeMaximumBoost", [address]);
+
+    const isLoadingAll = (isLoadingAR || isLoadingrR || isLoadingPP || isLoadingVP || isLoadingMB);
+
 
     return (
         <div className="flex flex-col min-h-screen">
             {isWalletConnected ? (
-                <div className="grid grid-rows-5 h-96">
+                <div className="grid grid-rows-4 h-96">
                     {/* Row 1 */}
                     <p className="text-4xl font-medium mx-auto mt-10">Welcome {address}!</p>
                     {/* Row 2 */}
@@ -42,25 +50,22 @@ export default function UserProfile() {
                         </div>
                     </div>
                     {/* Row 4 */}
-                    <div>
-                        <div className="grid grid-cols-2">
-                            <p className="text-2xl font-small mx-20 w-full mt-28">Curious to know your statistics? Click on the button to fill the table</p>
-                            {/* Pass setStatistics function to update statistics */}
-                            <div className="flex mx-32 h-10 mt-28">
-                                <StatisticButton userId={address} setStatistics={setStatistics} />
-                            </div>
-                        </div>
-                    </div>
-                    {/* Row 5 */}
                     <div className="mx-20 mt-28">
                         {/* Pass computed statistics to UserTableInformations */}
-                        <UserTableInformations
-                            authorReputation={statistics[0]}
-                            readerReputation={statistics[1]}
-                            publishPrice={statistics[2]}
-                            votePrice={statistics[3]}
-                            maximumBoost={statistics[4]}
-                        />
+                        {
+                            isLoadingAll ? (
+                            <p className="flex mx-auto mt-10">Loading User Statistics...</p>
+                            ) : (
+                            <UserTableInformations
+                            authorReputation={aR}
+                            readerReputation={rR}
+                            publishPrice={Number(pP) * 10 ** -18}
+                            votePrice={Number(vP) * 10 ** -18}
+                            maximumBoost={Number(mB) * 10 ** -18}
+                            />
+                            )
+                        }
+                        
                     </div>
                 </div>
             ) : (

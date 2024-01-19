@@ -53,7 +53,7 @@ export default function UserTableInformations({ authorReputation, readerReputati
                     <th className="border">
                         <div className="font-bold">
                             Publish Price
-                            <div className="tooltip tooltip-right ml-4" data-tip="Minimum amount of Wei to pay to publish an article">
+                            <div className="tooltip tooltip-right ml-4" data-tip="Minimum amount of Ethers to pay to publish an article">
                                 <button><FontAwesomeIcon icon={faCircleInfo} /></button>
                             </div>
                         </div>
@@ -67,7 +67,7 @@ export default function UserTableInformations({ authorReputation, readerReputati
                     <th className="border">
                         <div className="font-bold">
                             Vote Price
-                            <div className="tooltip tooltip-right ml-4" data-tip="Minimum amount of Wei to pay to vote an article">
+                            <div className="tooltip tooltip-right ml-4" data-tip="Minimum amount of Ethers to pay to vote an article">
                                 <button><FontAwesomeIcon icon={faCircleInfo} /></button>
                             </div>
                         </div>
@@ -81,7 +81,7 @@ export default function UserTableInformations({ authorReputation, readerReputati
                     <th className="border">
                         <div className="font-bold">
                             Maximum Boost
-                            <div className="tooltip tooltip-right ml-4" data-tip="Maximum amount of expendable tokens to boost the vote weight (it can at most be doubled)">
+                            <div className="tooltip tooltip-right ml-4" data-tip="Maximum amount of Veri tokens to boost the vote weight (it can at most be doubled)">
                                 <button><FontAwesomeIcon icon={faCircleInfo} /></button>
                             </div>
                         </div>
