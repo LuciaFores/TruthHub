@@ -30,7 +30,7 @@ export default function PublishArticle(){
     return(
         <div className="flex flex-col min-h-screen">
             <div>
-                <p className="flex text-8xl font-medium my-10 place-content-center">Write a new article!</p>
+                <p className="flex text-8xl font-medium my-10 place-content-center">Publish a new article!</p>
             </div>
             <div className="container grid grid-cols-2">
                 <div className="grid mx-auto">
@@ -41,8 +41,8 @@ export default function PublishArticle(){
                         Have something that you want to share with the world? <br/>
                         Publish a new article on TruthHub! <br/>
                         Just connect your MetaMask wallet, insert the event Id of your article and you will be ready to go! <br/>
-                        Remember that in order to publish an article on TruthHub you must publish it on Nostr first and you will start collecting votes by the community. <br/>
-                        Remember that you need to be a registered author to write an article on TruthHub!
+                        Remember that in order to publish an article on TruthHub you must publish it on Nostr first and once published you will start collecting votes by the community. <br/>
+                        Remember that you need to be a registered author to publish an article on TruthHub!
                     </p>
                 </div>
             </div>

@@ -179,13 +179,6 @@ contract TruthHub is IERC1155Receiver {
     /// It is a mapping(uint256 articleId => Article article)
     mapping(uint256 => Article) public articles;
 
-    /// The following two mappings may be useful or not, if they will never
-    /// be used, delete them
-    /// Mapping needed to register the correspondences between the eventIds
-    /// and the articleIds
-    /// It is a mapping(byte32 eventId => uint256 articleId)
-    mapping(bytes32 => uint256) public eventIdToArticleId; // metti funzione che prende uint256 e restituisce byte32 sarebbe articleIdToEventId
-
     /// *** CONTRACT MODIFIERS *** ///
     /// The following modifier checks if the user that is signing the
     /// transaction is also an author; it checks the mapping authors
@@ -592,7 +585,6 @@ contract TruthHub is IERC1155Receiver {
             msg.value >= computePublishPrice(msg.sender),
             "Not enough ether"
         );
-        require(eventIdToArticleId[eventId] == 0, "Article already published");
         totalArticles += 1;
         uint256 articleId = totalArticles;
         // The mappings are created empty by default
@@ -614,7 +606,6 @@ contract TruthHub is IERC1155Receiver {
         );
         articleIdToUpvotersAddresses[articleId].add(msg.sender);
         articleIdToDownvotersAddresses[articleId].add(msg.sender);
-        eventIdToArticleId[eventId] = articleId;
         addressToArticlesPublished[msg.sender].add(articleId);
         emit PublishArticle(
             msg.sender,
