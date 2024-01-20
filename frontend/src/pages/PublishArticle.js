@@ -16,7 +16,7 @@ export default function PublishArticle(){
     };
 
     const handlePublishPriceChange = (e) => {
-        setPublishPriceValue(Number(e.target.value) * 10 ** 18);
+        setPublishPriceValue(e.target.value);
     };
 
 
@@ -78,12 +78,12 @@ export default function PublishArticle(){
                             </div>
                             {/*Col 2*/}
                             <div>
-                            <label className="form-control w-full max-w-xs">
-                                <div className="label">
-                                    <span className="label-text">Insert the amount of Ethers you want to pay</span>
-                                </div>
-                                <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Cost" value={publishPriceValue} onChange={handlePublishPriceChange}/>
-                            </label>
+                                <label className="form-control w-full max-w-xs">
+                                    <div className="label">
+                                        <span className="label-text">Insert the amount of Ethers you want to pay</span>
+                                    </div>
+                                    <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Price" value={publishPriceValue} onChange={handlePublishPriceChange}/>
+                                </label>
                             </div>
                             {/*Col 3*/}
                             <div className="flex place-content-center mt-8 mb-10 h-12">

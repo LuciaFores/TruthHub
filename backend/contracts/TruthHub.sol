@@ -137,6 +137,10 @@ contract TruthHub is IERC1155Receiver {
     /// Set of articles that has been voted by a user
     mapping(address => EnumerableSet.UintSet) internal addressToArticlesVoted;
 
+    /// Set of articles that has been published by a user
+    mapping(address => EnumerableSet.UintSet)
+        internal addressToArticlesPublished;
+
     /// Set of upvoters' addresses
     mapping(uint256 => EnumerableSet.AddressSet)
         internal articleIdToUpvotersAddresses;
@@ -233,31 +237,21 @@ contract TruthHub is IERC1155Receiver {
     modifier validClaimer(uint256 articleId) {
         // Check if the msg.sender is in the majority or if there is a tie between upvotes and downvotes
         require(
-            EnumerableSet.contains(
-                articleIdToUpvotersAddresses[articleId],
-                msg.sender
-            ) ||
-                EnumerableSet.contains(
-                    articleIdToDownvotersAddresses[articleId],
-                    msg.sender
-                ),
+            articleIdToUpvotersAddresses[articleId].contains(msg.sender) ||
+                articleIdToDownvotersAddresses[articleId].contains(msg.sender),
             "You did not vote"
         );
         // Majority -> upvotes
         if (articles[articleId].upvotes > articles[articleId].downvotes) {
             require(
-                EnumerableSet.contains(
-                    articleIdToUpvotersAddresses[articleId],
-                    msg.sender
-                ),
+                articleIdToUpvotersAddresses[articleId].contains(msg.sender),
                 "You are not in the majority"
             );
         }
         // Majority -> downvotes
         else if (articles[articleId].upvotes < articles[articleId].downvotes) {
             require(
-                EnumerableSet.contains(
-                    articleIdToDownvotersAddresses[articleId],
+                articleIdToDownvotersAddresses[articleId].contains(
                     msg.sender
                 ) && articles[articleId].author != msg.sender,
                 "You are not in the majority"
@@ -273,6 +267,62 @@ contract TruthHub is IERC1155Receiver {
         );
         _;
     }
+
+    modifier onlyBestArticles(uint256 articleId) {
+        require(
+            (articles[articleId].upvotes + articles[articleId].downvotes >=
+                endWeightVote &&
+                block.number >= articles[articleId].minimumBlockThreshold) ||
+                (block.number > articles[articleId].maximumBlockThreshold),
+            "Vote is open"
+        );
+        require(
+            articles[articleId].upvotes > articles[articleId].downvotes,
+            "The article was not approved by the community"
+        );
+        _;
+    }
+
+    /// CONTRACTS EVENTS
+    event RegisterAuthor(
+        address _author,
+        bytes32 _signature,
+        bytes32 _nostrPublicKey
+    );
+    event PublishArticle(
+        address _author,
+        bytes32 _eventId,
+        uint256 _authorReputation,
+        uint256 _articleId,
+        uint256 _etherSpentToPublish,
+        uint256 _minimumBlockVote,
+        uint256 _maximumBlockVote
+    );
+    event Vote(
+        address _voter,
+        uint256 articleId,
+        bool _voteExpressed,
+        uint256 _tokenSpentToVote,
+        uint256 _etherSpentToVote,
+        uint256 _voterReputation
+    );
+    event ClaimReward(
+        address _claimer,
+        uint256 _articleId,
+        uint256 _etherReceived,
+        uint256 _tokenReceived
+    );
+    event MintArticleNFT(
+        address _author,
+        uint256 _articleId,
+        uint256 _nftAmount
+    );
+    event BuyArticleNFT(
+        address _buyer,
+        uint256 _articleId,
+        uint256 _nftAmount,
+        address _author
+    );
 
     /// *** CONTRACT FUNCTIONS *** ///
     /// constructor function
@@ -344,10 +394,102 @@ contract TruthHub is IERC1155Receiver {
         return authorsReputations[user];
     }
 
+    function getAuthorArticlesPublished(
+        address author
+    ) public view returns (uint256[] memory) {
+        return addressToArticlesPublished[author].values();
+    }
+
     function getReaderArticlesVoted(
         address reader
     ) public view returns (uint256[] memory) {
-        return EnumerableSet.values(addressToArticlesVoted[reader]);
+        return addressToArticlesVoted[reader].values();
+    }
+
+    function isAuthor(address user) public view returns (bool) {
+        if (authors[user] != 0) {
+            return true;
+        }
+        return false;
+    }
+
+    function isVoteOpen(uint256 articleId) public view returns (bool) {
+        if (
+            (block.number <= articles[articleId].maximumBlockThreshold &&
+                articles[articleId].upvotes + articles[articleId].downvotes <
+                endWeightVote) ||
+            (block.number < articles[articleId].minimumBlockThreshold)
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    function isVoteClosed(uint256 articleId) public view returns (bool) {
+        if (
+            (articles[articleId].upvotes + articles[articleId].downvotes >=
+                endWeightVote &&
+                block.number >= articles[articleId].minimumBlockThreshold) ||
+            (block.number > articles[articleId].maximumBlockThreshold)
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    function isValidVoter(
+        address user,
+        uint256 articleId
+    ) public view returns (bool) {
+        if (
+            articleIdToEtherSpentToUpvote[articleId][user] == 0 &&
+            articleIdToEtherSpentToDownvote[articleId][user] == 0
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    function isValidClaimer(
+        address user,
+        uint256 articleId
+    ) public view returns (bool) {
+        if (
+            articleIdToUpvotersAddresses[articleId].contains(user) ||
+            articleIdToDownvotersAddresses[articleId].contains(user)
+        ) {
+            if (articles[articleId].upvotes > articles[articleId].downvotes) {
+                if (articleIdToUpvotersAddresses[articleId].contains(user)) {
+                    return true;
+                }
+            } else if (
+                articles[articleId].upvotes < articles[articleId].downvotes
+            ) {
+                if (
+                    articleIdToDownvotersAddresses[articleId].contains(user) &&
+                    articles[articleId].author != user
+                ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function isBestAuthor(address user) public view returns (bool) {
+        if (authorsReputations[user] > 90) {
+            return true;
+        }
+        return false;
+    }
+
+    function isBestArticle(uint256 articleId) public view returns (bool) {
+        if (isVoteClosed(articleId)) {
+            if (articles[articleId].upvotes > articles[articleId].downvotes) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// The following function is used to register a new author
@@ -375,6 +517,7 @@ contract TruthHub is IERC1155Receiver {
         _setAuthorReputation(msg.sender);
         authors[msg.sender] = nostrPublicKey;
         nostrAccountToEthereumAccount[nostrPublicKey] = msg.sender;
+        emit RegisterAuthor(msg.sender, signature, nostrPublicKey);
     }
 
     function computation(
@@ -472,6 +615,16 @@ contract TruthHub is IERC1155Receiver {
         articleIdToUpvotersAddresses[articleId].add(msg.sender);
         articleIdToDownvotersAddresses[articleId].add(msg.sender);
         eventIdToArticleId[eventId] = articleId;
+        addressToArticlesPublished[msg.sender].add(articleId);
+        emit PublishArticle(
+            msg.sender,
+            eventId,
+            authorsReputations[msg.sender],
+            articleId,
+            msg.value,
+            block.number + minimumBlockDelta,
+            block.number + maximumBlockDelta
+        );
         return articleId;
     }
 
@@ -527,7 +680,15 @@ contract TruthHub is IERC1155Receiver {
             ] += tokenSpentToVote;
             articles[articleId].veriSpentInDownvotes += tokenSpentToVote;
         }
-        EnumerableSet.add(addressToArticlesVoted[msg.sender], articleId);
+        addressToArticlesVoted[msg.sender].add(articleId);
+        emit Vote(
+            msg.sender,
+            articleId,
+            voteExpressed,
+            tokenSpentToVote,
+            msg.value,
+            readersReputations[msg.sender]
+        );
     }
 
     function updateReaderReputation(address user, bool direction) internal {
@@ -595,10 +756,6 @@ contract TruthHub is IERC1155Receiver {
                 tokenAmountToGiveBack =
                     articleIdToVeriSpentToUpvote[articleId][msg.sender] +
                     articleIdToVeriSpentToDownvote[articleId][msg.sender];
-                EnumerableSet.remove(
-                    addressToArticlesVoted[msg.sender],
-                    articleId
-                );
             }
             tokenAmountToMint = 0;
         }
@@ -633,19 +790,13 @@ contract TruthHub is IERC1155Receiver {
                 ];
                 // The reputation of the reader is increased by 1
                 updateReaderReputation(msg.sender, true);
-                EnumerableSet.remove(
-                    addressToArticlesVoted[msg.sender],
-                    articleId
-                );
             }
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 majorityUsers = EnumerableSet.length(
-                articleIdToUpvotersAddresses[articleId]
-            );
-            uint256 minorityUsers = EnumerableSet.length(
-                articleIdToDownvotersAddresses[articleId]
-            );
+            uint256 majorityUsers = articleIdToUpvotersAddresses[articleId]
+                .length();
+            uint256 minorityUsers = articleIdToDownvotersAddresses[articleId]
+                .length();
             uint256 addressesToPurge = Math.ceilDiv(
                 minorityUsers,
                 majorityUsers
@@ -666,16 +817,9 @@ contract TruthHub is IERC1155Receiver {
                     articleIdToDownvotersAddresses[articleId],
                     userToPurge
                 );
-                EnumerableSet.remove(
-                    addressToArticlesVoted[userToPurge],
-                    articleId
-                );
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
-            EnumerableSet.remove(
-                articleIdToUpvotersAddresses[articleId],
-                msg.sender
-            );
+            articleIdToUpvotersAddresses[articleId].remove(msg.sender);
             (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
@@ -700,15 +844,12 @@ contract TruthHub is IERC1155Receiver {
                 msg.sender
             ];
             updateReaderReputation(msg.sender, true);
-            EnumerableSet.remove(addressToArticlesVoted[msg.sender], articleId);
             // Since people who are in the minority cannot claim anything, people in the majority must take account of change their reputation
             // Compute how many people are eligible to update the reputation of the minority
-            uint256 majorityUsers = (EnumerableSet.length(
-                articleIdToDownvotersAddresses[articleId]
-            ) - 1); // because by construction also the author is here but in this case the author is not a valid claimer
-            uint256 minorityUsers = EnumerableSet.length(
-                articleIdToUpvotersAddresses[articleId]
-            );
+            uint256 majorityUsers = (articleIdToDownvotersAddresses[articleId]
+                .length() - 1); // because by construction also the author is here but in this case the author is not a valid claimer
+            uint256 minorityUsers = articleIdToUpvotersAddresses[articleId]
+                .length();
             uint256 addressesToPurge = Math.ceilDiv(
                 minorityUsers,
                 majorityUsers
@@ -731,16 +872,9 @@ contract TruthHub is IERC1155Receiver {
                     articleIdToUpvotersAddresses[articleId],
                     userToPurge
                 );
-                EnumerableSet.remove(
-                    addressToArticlesVoted[userToPurge],
-                    articleId
-                );
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
-            EnumerableSet.remove(
-                articleIdToDownvotersAddresses[articleId],
-                msg.sender
-            );
+            articleIdToDownvotersAddresses[articleId].remove(msg.sender);
             (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
@@ -757,14 +891,23 @@ contract TruthHub is IERC1155Receiver {
                 tokenAmountToGiveBack + additionalTokenAmountToGiveBack
             );
         }
+        emit ClaimReward(
+            msg.sender,
+            articleId,
+            etherAmount,
+            tokenAmountToMint +
+                additionalTokenAmountToMint +
+                tokenAmountToGiveBack +
+                additionalTokenAmountToGiveBack
+        );
     }
 
     /// This function is callable by only the best authors of the platform and let them the possibility
-    /// to mint a specific amount of nft for one of their articles
+    /// to mint a specific amount of nft for one of their best articles
     function mintArticleNFT(
         uint256 articleId,
         uint256 nftAmount
-    ) public onlyBestAuthors {
+    ) public onlyBestAuthors onlyBestArticles(articleId) {
         require(
             articles[articleId].author == msg.sender,
             "You are not the author of this article"
@@ -775,6 +918,7 @@ contract TruthHub is IERC1155Receiver {
             nftAmount * articleNFTMintInVeri
         );
         contractArticleNFT.mint(address(this), articleId, nftAmount, "");
+        emit MintArticleNFT(msg.sender, articleId, nftAmount);
     }
 
     function buyArticleNFT(
@@ -801,5 +945,11 @@ contract TruthHub is IERC1155Receiver {
             nftAmount * articleNFTMintInVeri
         );
         Address.sendValue(payable(articles[articleId].author), msg.value);
+        emit BuyArticleNFT(
+            msg.sender,
+            articleId,
+            nftAmount,
+            articles[articleId].author
+        );
     }
 }

@@ -18,7 +18,6 @@ export default function RegisterAuthorButton({signature, nostrPublicKey}) {
         action={async (contract) => {
             await contract.call("registerAuthor", [bech32ToHex(signature, 'npub'), bech32ToHex(nostrPublicKey, 'npub')]);
         }}
-        onSuccess={(success) => alert("Congrats on registering as an author!")}
         onError={(error) => alert(error)}
         >
             Register Author!

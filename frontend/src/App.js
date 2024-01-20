@@ -26,14 +26,16 @@ function App() {
 
 /*
 {
-  "id": "4d725a9a382e79abda0e62cda8802e0933ede3f1271daedc14b329d02254489e",
+  "id": "96ee63ae7d88bc0f4a4ce01136a87d311f48a3dabc12faeafbbef3e3a16f9dcd",
   "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
-  "content": "prova onSuccess",
+  "created_at": 1705743160,
   "kind": 1,
-  "created_at": 1705579365,
   "tags": [],
-  "sig": "c6a900e687b7d4f9e2c387274990a2fd36bb7cc44058b941b5ab09d954fb7ccf1f1ae0d28ef7a0ac629709288ea5b23f0672d3d42bfa9f1b762514d4dc28e13c",
-  "relays": []
+  "content": "prova pagamento",
+  "sig": "9e57f1bf4f09e50164231d3fc4d9418c182334b5e7ff5ed5e5b9a6f19b5aeac4b879b33f4103651a7556d9aa35d99784953b479319894a25f90563ba060fc962",
+  "relays": [
+    "wss://nostr.sats.li/"
+  ]
 }
 */
 

@@ -12,10 +12,9 @@ export default function PublishArticleButton({eventId, publishCost}) {
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            const overrides = {value : publishCost};
+            const overrides = {value : String(publishCost*10**18)};
             await contract.call("publishArticle", [eventIdToHex(eventId)], overrides);
         }}
-        onSuccess={(success) => alert("Congrats on publishing your article!")}
         onError={(error) => alert(error)}
         >
             Publish your article!
