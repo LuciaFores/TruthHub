@@ -574,8 +574,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/TruthHub.sol": {
-      "lastModificationDate": 1704480776747,
-      "contentHash": "7af28c65ee5b208e212650dc732f3139",
+      "lastModificationDate": 1705755458422,
+      "contentHash": "3e4612ec217bae31de38588bbca8be80",
       "sourceName": "contracts/TruthHub.sol",
       "solcConfig": {
         "version": "0.8.22",
