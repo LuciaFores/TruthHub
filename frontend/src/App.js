@@ -26,13 +26,13 @@ function App() {
 
 /*
 {
-  "id": "f237bf0a1266ece0e2bb70793eca9056dbbfd38eca2ea599ae10827c0bc9956d",
+  "id": "6bc7a7d8108e9bbfb4f9bc1754067cb9e11f29e9c29c9e2bd5817f88bf192dff",
   "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
-  "content": "non sono di 0xa96Ec6C037eAFD611AB503EE7550EA17577f8381 ma sono di 0x7F3D8af22294C930B58E3987202F27CBEfbe76E6",
+  "content": "sono di 0x7F3D8af22294C930B58E3987202F27CBEfbe76E6",
   "kind": 1,
-  "created_at": 1705766824,
+  "created_at": 1705766781,
   "tags": [],
-  "sig": "a52391bb3cfb65cb754aa5eed8594e02c3eeed3353c501dd7f5ee7ede8c45c4ef4dffb33c2d45870f91b408ecb0bdaf820b303895a6563b3f7cbb17407a8bc94",
+  "sig": "2b960b5f1bdd884afa286cb190ee6dc408526273e4383919cf96355cfdf3f3c529cb9b33c88ebcfaaedde176ab1f115531d6e37eff32022fe68dce3be7c36883",
   "relays": []
 }
 */

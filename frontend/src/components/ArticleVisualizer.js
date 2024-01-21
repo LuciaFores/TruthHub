@@ -1,6 +1,6 @@
-export default function ArticleVisualizer({ article }) {
-    
+import converter from "bech32-converting";
 
+export default function ArticleVisualizer({ article }) {
     return(
         <div className="card w-auto bg-neutral text-neutral-content py-10">
             <div className="card-body items-left text-left">
@@ -20,15 +20,33 @@ export default function ArticleVisualizer({ article }) {
                         </div>
                         <div className="divider divider-horizontal"></div>
                         <div className="grid h-20 flex-grow card bg-base-300 rounded-box place-items-center">
-                            Published by: {article.pubkey}
+                            Published by: {converter('npub').toBech32(article.pubKey)}
                         </div>
                     </div>                           
                     <div className="divider"></div> 
                     <div className="grid h-20 flex-grow card bg-base-300 rounded-box place-items-center">
-                        <h2 className="card-title">Event id: {article.id}</h2>
+                        <h2 className="card-title">Event id: {article.eventId}<br/>Article id: {article.articleId}</h2>
                     </div>
             </div>
-                <p className="mt-10" key={article.id}>{article.content}</p>
+                <div className="grid grid-cols-2">
+                    {/** Col 1 */}
+                    <p className="mx-auto mt-10" key={article.eventId}>Da aggiungere contenuto</p>
+                    {/** Col 2 */}
+                    <div className="mx-auto mt-8">
+                        <p className="text-xl font-medium">Article Info:</p>
+                        <p>Upvotes weights: {article.upvotes}</p>
+                        <p>Downvotes weights: {article.downvotes}</p>
+                        <p>Upvoters: {article.upvoters}</p>
+                        <p>Downvoters: {article.downvoters}</p>
+                        <p>Ethers spent to publish: {article.ethersSpentToPublish}</p>
+                        <p>Minimum block threshold: {article.minimumBlockThreshold}</p>
+                        <p>Maximum block threshold: {article.maximumBlockThreshold}</p>
+                        <p>Ethers spent in upvotes: {article.ethersSpentInUpvotes}</p>
+                        <p>Ethers spent in downvotes: {article.ethersSpentInDownvotes}</p>
+                        <p>Veri spent in upvotes: {article.veriSpentInUpvotes}</p>
+                        <p>Veri spent in downvotes: {article.veriSpentInDownvotes}</p>
+                    </div>
+                </div>
             </div>
         </div>
     );
