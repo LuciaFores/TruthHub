@@ -1,7 +1,7 @@
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import { faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
-export default function UserTableInformations({ authorReputation, readerReputation, publishPrice, votePrice, maximumBoost }) {
+export default function UserTableInformations({ amountVeri, authorReputation, readerReputation, publishPrice, votePrice, maximumBoost }) {
     const isAuthor = authorReputation > 0;
 
     return(
@@ -20,7 +20,20 @@ export default function UserTableInformations({ authorReputation, readerReputati
                 </tr>
                 </thead>
                 <tbody>
-                {/* row 1 */}
+                {/* row 0 */}
+                <tr>
+                    <th className="border">
+                        <div className="font-bold">
+                            Amount Veri
+                            <div className="tooltip tooltip-right ml-4" data-tip="Your Veri balance">
+                                <button><FontAwesomeIcon icon={faCircleInfo} /></button>
+                            </div>
+                        </div>
+                    </th>
+                    <td className="border">
+                        {amountVeri}
+                    </td>
+                </tr>
                 <tr>
                     <th className="border">
                         <div className="font-bold">

@@ -1,4 +1,28 @@
 export const TruthHubAddress = "0x42c071f5aD414159A9FF65085868d29f2B9D97e9";
+export const VeriAddress = "0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2";
+// 0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2
+
+export const VeriAbi = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
 
 export const TruthHubAbi = [
   {

@@ -1,18 +1,18 @@
 import { Web3Button } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
-export default function PublishArticle({articleId, voteExpressed, weiSpentToVote, tokenSpentToVote}) {
+export default function PublishArticle({articleId, voteExpressed, votePrice, veriAmount}) {
     return(
         <Web3Button
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            const overrides = {value : weiSpentToVote};
-            await contract.call("vote", [articleId, voteExpressed, tokenSpentToVote], overrides);
-            console.log("Congrats on expressing your vote!");
+            const overrides = {value : String(votePrice*10**18)};
+            veriAmount = String(veriAmount*10**18);
+            await contract.call("vote", [articleId, voteExpressed, veriAmount], overrides);
         }}
-        >
-            {/*da controllare come fare a farlo diventare l'icona di upvote e quella di downvote*/}
+        onError={(error) => alert(error)}
+        > Vote Article
         </Web3Button>
     );
 }

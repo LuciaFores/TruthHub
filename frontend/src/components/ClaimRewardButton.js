@@ -8,7 +8,6 @@ export default function ClaimReward({articleId}) {
         contractAbi={TruthHubAbi}
         action={async (contract) => {
             await contract.call("claimReward", [articleId]);
-            console.log("Congrats on claiming your reward!");
         }}
         onError={(error) => alert(error)}
         >
