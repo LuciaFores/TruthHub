@@ -2,6 +2,9 @@ const hre = require("hardhat");
 const fs = require('fs');
 const execSync = require('child_process').execSync;
 
+// To deploy
+// npx hardhat run --network sepolia scripts/deploy.js
+
 /**
  * Deploys a contract with the given name and arguments, using the provided deployer as the signer.
  *

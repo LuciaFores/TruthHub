@@ -522,6 +522,7 @@ contract TruthHub is IERC1155Receiver {
         // 51 = 100
         // 101 = 50
         uint256 x;
+        uint256 res;
         if (reputation <= 51) {
             uint256 subRes;
             uint256 mulRes;
@@ -529,10 +530,13 @@ contract TruthHub is IERC1155Receiver {
             (, subRes) = Math.trySub(51, reputation);
             (, mulRes) = Math.tryMul(subRes, 2);
             (, x) = Math.tryAdd(100, mulRes);
+            res = Math.mulDiv(actionPrice, x, 100);
         } else {
             (, x) = Math.trySub(reputation, 51);
+            res = Math.mulDiv(actionPrice, x, 100);
+            res = actionPrice - res;
         }
-        return Math.mulDiv(actionPrice, x, 100);
+        return res;
     }
 
     function computePublishPrice(address author) public view returns (uint256) {
@@ -630,6 +634,10 @@ contract TruthHub is IERC1155Receiver {
         bool voteExpressed,
         uint256 tokenSpentToVote
     ) external payable validVoter(articleId) voteOpen(articleId) {
+        require(
+            msg.sender != articles[articleId].author,
+            "You are the author of the article"
+        );
         require(msg.value >= computeVotePrice(msg.sender), "Not enough ether");
         require(
             tokenSpentToVote <= computeMaximumBoost(msg.sender),

@@ -5,7 +5,7 @@ export default function UserTableInformations({ amountVeri, authorReputation, re
     const isAuthor = authorReputation > 0;
 
     return(
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto mx-20">
             <table className="table table-compact">
                 {/* head */}
                 <thead>

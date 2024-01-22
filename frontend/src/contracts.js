@@ -1,5 +1,6 @@
-export const TruthHubAddress = "0x42c071f5aD414159A9FF65085868d29f2B9D97e9";
-export const VeriAddress = "0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2";
+export const TruthHubAddress = "0xD827C819bA242f23b03Dac0fF1Ed40514Cfe861F";
+// 0x42c071f5aD414159A9FF65085868d29f2B9D97e9
+export const VeriAddress = "0xd7e6463c1fA9AE6aec65Ab5Dd797DC497b13F520";
 // 0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2
 
 export const VeriAbi = [

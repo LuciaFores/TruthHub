@@ -6,7 +6,11 @@ import UserTableInformations from "../components/UserTableInformations";
 import CompactArticleVisualizer from "../components/CompactArticleVisualizer";
 import { ethers } from "ethers";
 
-async function getArticleInfo(truthHubContractInstance, articleId, isValidClaimer) {
+// 1000000000000000 -> 0.0001
+// 1000000000000000 
+
+
+async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) {
 
     articleId = parseInt(articleId);
     let [ , 
@@ -58,7 +62,7 @@ async function getArticleInfo(truthHubContractInstance, articleId, isValidClaime
         veriSpentInUpvotes,
         veriSpentInDownvotes,
         pubKey,
-        isValidClaimer
+        isClaimable
     };
 }
 
@@ -83,9 +87,10 @@ async function getArticles(address) {
     // for each element of involvedArticles
     for (let articleId of involvedArticles) {
         const isVoteOpen = await truthHubContractInstance.isVoteOpen(articleId);
+        const isVoteClosed = await truthHubContractInstance.isVoteClosed(articleId);
         const isValidClaimer = await truthHubContractInstance.isValidClaimer(address, articleId);
-        if(isVoteOpen || isValidClaimer){
-            const articleInfo = await getArticleInfo(truthHubContractInstance, articleId, isValidClaimer);
+        if(isVoteOpen || (isValidClaimer && isVoteClosed)){
+            const articleInfo = await getArticleInfo(truthHubContractInstance, articleId, isValidClaimer && isVoteClosed);
             articles.push(articleInfo);
         }
         
@@ -159,7 +164,7 @@ function UserProfile() {
                             ):(
                             <div className="grid grid-rows-6">
                                 <p className="text-4xl font-medium mx-auto mt-10">Welcome {address}!</p>
-                                <p className="text-2xl font-medium mx-auto mt-10">User Statistics</p>
+                                <p className="text-2xl font-medium mx-20 mt-10">User Statistics</p>
                                 <UserTableInformations
                                 amountVeri={Number(amountVeri) * 10 ** -18}
                                 authorReputation={aR}
