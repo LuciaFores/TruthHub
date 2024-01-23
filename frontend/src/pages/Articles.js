@@ -1,6 +1,6 @@
 import ArticleVisualizer from '../components/ArticleVisualizer.js';
 import VoteTableInformations from '../components/VoteTableInformations.js';
-import { TruthHubAbi, TruthHubAddress } from '../contracts.js';
+import { TruthHubAbi, TruthHubAddress, VeriAbi, VeriAddress } from '../contracts.js';
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { useContract, useContractRead, useAddress, useConnectionStatus } from "@thirdweb-dev/react";
@@ -95,6 +95,11 @@ async function getArticles(address) {
 
 
 function RenderArticles({ address, userVotePrice, userMaximumBoost }) {
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
     const [articles, setArticles] = useState([]);
     useEffect(() => {
         getArticles(address).then(setArticles)
@@ -102,7 +107,7 @@ function RenderArticles({ address, userVotePrice, userMaximumBoost }) {
 
     const cards = articles.map((article) => {
         return <div>
-            <ArticleVisualizer article={article} userVotePrice={userVotePrice} userMaximumBoost={userMaximumBoost}/>
+            <ArticleVisualizer article={article} userVotePrice={userVotePrice} userMaximumBoost={userMaximumBoost} veriTokenContractInstance={veriTokenContractInstance}/>
         </div>
     });
     return <div align='gird grid-row-1 place-items-center'>{cards}</div>

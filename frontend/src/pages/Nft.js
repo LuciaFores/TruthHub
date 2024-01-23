@@ -90,15 +90,6 @@ async function getBestArticles(address) {
 
 function RenderCompactBestArticles({ address, mintPrice }) {
 
-    /*
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    await provider.send("eth_requestAccounts", []);
-    const signer = provider.getSigner();
-    let meltyfi = new ethers.Contract(addressMeltyFiNFT, MeltyFiNFT, provider);
-    meltyfi = meltyfi.connect(signer);
-    const response = await meltyfi.meltWonkaBars(lottery, wonkaBarsOwned);
-    */
-
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
     const signer = provider.getSigner();

@@ -2,7 +2,7 @@ import converter from "bech32-converting";
 import VoteButton from "./VoteButton";
 import { useState } from "react";
 
-export default function ArticleVisualizer({ article, userVotePrice, userMaximumBoost }) {
+export default function ArticleVisualizer({ article, userVotePrice, userMaximumBoost, veriTokenContractInstance }) {
     const [votePriceValue, setVotePriceValue] = useState('');
     const [veriAmountValue, setVeriAmountValue] = useState('');
 
@@ -37,7 +37,7 @@ export default function ArticleVisualizer({ article, userVotePrice, userMaximumB
                                 </svg>  
                             </div>
                             <div className="mt-8">
-                                <VoteButton articleId={article.articleId} voteExpressed={article.vote} votePrice={votePriceValue} veriAmount={veriAmountValue}/>
+                                <VoteButton articleId={article.articleId} voteExpressed={article.vote} votePrice={votePriceValue} veriAmount={veriAmountValue} veriTokenContractInstance={veriTokenContractInstance}/>
                             </div>
                             <label className="form-control max-w-xs">
                                 <div className="label">

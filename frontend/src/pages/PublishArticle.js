@@ -26,6 +26,8 @@ export default function PublishArticle(){
     const address = useAddress();
 
     const {data: pP, isLoading: isLoadingPP} = useContractRead(contract, "computePublishPrice", [address]);
+    const {data: isAuthor, isLoading: isLoadingAuthor} = useContractRead(contract, "isAuthor", [address]);
+
 
     return(
         <div className="flex flex-col min-h-screen">
@@ -47,51 +49,63 @@ export default function PublishArticle(){
                 </div>
             </div>
             {isWalletConnected ? (
-                <div className="container mx-20">
-                    <div className="grid grid-rows-2">
-                        {/*Row 1*/}
-                        <div className="grid grid-cols-2">
-                            {/*Col 2*/}
-                            <div className="flex text-l my-10">
-                                { isLoadingPP ? (
-                                <p>
-                                Loading Publish Price...
-                                </p>
-                                ) : (
-                                <p>
-                                If you want to publish an article on TruthHub you need to pay at least {Number(pP) * 10 ** -18} Ethers <br/>
-                                You can also pay more if you want, just insert the amount you want to pay below.
-                                </p>
-                                )}
-                            </div>
-                        </div>
-                        {/*Row 2*/}
-                        <div className="grid grid-cols-4">
-                            {/*Col 1*/}
+                    <div>
+                        { isLoadingAuthor ? (
+                            <p className="mx-20">Loading page...</p>
+                        ) : (
                             <div>
-                                <label className="form-control w-full max-w-xs">
-                                    <div className="label">
-                                        <span className="label-text">Insert the Nostr Event Id of your article</span>
+                            {isAuthor ? (
+                                <div className="container mx-20">
+                                <div className="grid grid-rows-2">
+                                    {/*Row 1*/}
+                                    <div className="grid grid-cols-2">
+                                        {/*Col 2*/}
+                                        <div className="flex text-l my-10">
+                                            { isLoadingPP ? (
+                                            <p>
+                                            Loading Publish Price...
+                                            </p>
+                                            ) : (
+                                            <p>
+                                            If you want to publish an article on TruthHub you need to pay at least {Number(pP) * 10 ** -18} Ethers <br/>
+                                            You can also pay more if you want, just insert the amount you want to pay below.
+                                            </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <input className="input input-primary w-full max-w-xs" type="text" placeholder="Nostr Event Id" value={articleEventIdValue} onChange={handleEventIdChange}/>
-                                </label>
+                                    {/*Row 2*/}
+                                    <div className="grid grid-cols-4">
+                                        {/*Col 1*/}
+                                        <div>
+                                            <label className="form-control w-full max-w-xs">
+                                                <div className="label">
+                                                    <span className="label-text">Insert the Nostr Event Id of your article</span>
+                                                </div>
+                                                <input className="input input-primary w-full max-w-xs" type="text" placeholder="Nostr Event Id" value={articleEventIdValue} onChange={handleEventIdChange}/>
+                                            </label>
+                                        </div>
+                                        {/*Col 2*/}
+                                        <div>
+                                            <label className="form-control w-full max-w-xs">
+                                                <div className="label">
+                                                    <span className="label-text">Insert the amount of Ethers you want to pay</span>
+                                                </div>
+                                                <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Price" value={publishPriceValue} onChange={handlePublishPriceChange}/>
+                                            </label>
+                                        </div>
+                                        {/*Col 3*/}
+                                        <div className="flex place-content-center mt-8 mb-10 h-12">
+                                            <PublishArticleButton eventId={articleEventIdValue} publishCost={publishPriceValue}/> 
+                                        </div>
+                                    </div> 
+                                </div>                      
                             </div>
-                            {/*Col 2*/}
-                            <div>
-                                <label className="form-control w-full max-w-xs">
-                                    <div className="label">
-                                        <span className="label-text">Insert the amount of Ethers you want to pay</span>
-                                    </div>
-                                    <input className="input input-primary w-full max-w-xs" type="text" placeholder="Publish Price" value={publishPriceValue} onChange={handlePublishPriceChange}/>
-                                </label>
+                            ) :(
+                                <p className="mx-20">You are not an author, if you want to publish an article please register yourself as an author</p>
+                            )}
                             </div>
-                            {/*Col 3*/}
-                            <div className="flex place-content-center mt-8 mb-10 h-12">
-                                <PublishArticleButton eventId={articleEventIdValue} publishCost={publishPriceValue}/> 
-                            </div>
-                        </div> 
-                    </div>                      
-                </div>
+                        )}
+                    </div>
             ) : (
                 <></>
             )} 

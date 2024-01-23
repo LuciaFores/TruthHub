@@ -1,4 +1,4 @@
-import { Web3Button, watchBlockWithTransactions } from "@thirdweb-dev/react";
+import { Web3Button } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
 export default function MintArticleNFT({articleId, nftAmount, veriTokenContractInstance, veriTokenPerArticleMinted}) {
