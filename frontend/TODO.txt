@@ -1,1 +1,23 @@
 capisci come gestire le colonne/righe su schermi piccoli
+
+
+Come recuperare gli articoli? chiedo l'id dell'autore? in questo caso dovrei poi filtrare cercando tutti gli articoli che l'autore ha pubblicato e che
+sono salvati nella struttura dati articles
+Oppure mostro tot articoli con id più grande (sarebbero gli ultimi pubblicati)?
+Oppure mostro quelli tutti quelli scritti da autori che hanno reputation sopra una certa soglia?
+
+Devo fare una demo corta per controllare che il meccanismo di voto funzioni
+
+Se do dei veri dove appaiono? nel portafoglio metamask?
+
+Gestisci la compravendita di NFT, anche in questo caso vedi di fare una prova per cui un autore il cui articolo è stato upvotato diventa subito topauthor
+e quindi può mintare NFT
+
+Deve esserci anche una prova in cui si può fare boost del voto e si deve far vedere che a reputazione modificata si modificano anche i parametri dello user profile
+
+
+Per i sequence diagram è necessario fare tutte le funzioni o solo gli use case principali? (ad esempio dovrei mettere le funzioni di compute publish price o roba del genere?
+
+
+ontrolla h tutt l struttur ati siano visualizzat a qualh part
+ontrolla s l'vnt i sist su nostr  s l'vnt i è i un autor l sistma

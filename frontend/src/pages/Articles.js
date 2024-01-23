@@ -1,54 +1,164 @@
-import { useNostrEvents } from "nostr-react";
+import ArticleVisualizer from '../components/ArticleVisualizer.js';
+import VoteTableInformations from '../components/VoteTableInformations.js';
+import { TruthHubAbi, TruthHubAddress, VeriAbi, VeriAddress } from '../contracts.js';
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import { useContract, useContractRead, useAddress, useConnectionStatus } from "@thirdweb-dev/react";
 
 
-export default function Articles() {
-    const { events } = useNostrEvents({
-        filter: {
-          authors: [
-            "76c71aae3a491f1d9eec47cba17e229cda4113a0bbb6e6ae1776d7643e29cafa",
-            
-          ],
-          since: 0,
-          kinds: [1],
-        },
-      });
-    
-    return(
-        <>
-            {events.map((event) => (
-                <div className="card w-auto bg-neutral text-neutral-content py-10">
-                    <div className="card-body items-left text-left">
-                        <div className="flex flex-col w-full">
-                            <div className="flex w-full">
-                                <div className="grid h-20 flex-grow grid grid-cols-2 card bg-base-300 rounded-box place-items-center">
-                                    <button className="btn btn-circle btn-outline">
-                                        <svg class="w-6 h-6 text-lime-500 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 14">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13V1m0 0L1 5m4-4 4 4"/>
-                                        </svg>
-                                    </button>
-                                    <button className="btn btn-circle btn-outline">
-                                        <svg class="w-6 h-6 text-red-600 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 14">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1v12m0 0 4-4m-4 4L1 9"/>
-                                        </svg>                                
-                                    </button>
-                                </div>
-                                <div className="divider divider-horizontal"></div>
-                                <div className="grid h-20 flex-grow card bg-base-300 rounded-box place-items-center">
-                                    Published by: {event.pubkey}
-                                </div>
-                            </div>                           
-                            <div className="divider"></div> 
-                            <div className="grid h-20 flex-grow card bg-base-300 rounded-box place-items-center">
-                                <h2 className="card-title">Article Title</h2>
-                            </div>
-                       </div>
-                        <p key={event.id}>{event.content}</p>
-                    </div>
-                </div>
-            ))}
-        </>
-        
-    );
+
+async function getArticleInfo(truthHubContractInstance, articleId) {
+
+    articleId = parseInt(articleId);
+    let [ , 
+        eventId,
+        author,
+        upvotes,
+        downvotes,
+        etherSpentToPublish,
+        upvoters,
+        downvoters,
+        minimumBlockThreshold,
+        maximumBlockThreshold,
+        ethersSpentInUpvotes,
+        ethersSpentInDownvotes,
+        veriSpentInUpvotes,
+        veriSpentInDownvotes] = await truthHubContractInstance.articles(articleId);
+
+    eventId = eventId.slice(2);
+    upvotes = Number(upvotes);
+    downvotes = Number(downvotes);
+    upvoters = Number(upvoters);
+    downvoters = Number(downvoters);
+    etherSpentToPublish = Number(etherSpentToPublish);
+    minimumBlockThreshold = Number(minimumBlockThreshold);
+    maximumBlockThreshold = Number(maximumBlockThreshold);
+    ethersSpentInUpvotes = Number(ethersSpentInUpvotes);
+    ethersSpentInDownvotes = Number(ethersSpentInDownvotes);
+    veriSpentInUpvotes = Number(veriSpentInUpvotes);
+    veriSpentInDownvotes = Number(veriSpentInDownvotes);
+
+    let pubKey = await truthHubContractInstance.authors(author);
+    let nostrPubKey = pubKey.slice(2);
+    let vote = null;
+
+
+
+    return {
+        articleId,
+        eventId,
+        author,
+        upvotes,
+        downvotes,
+        etherSpentToPublish,
+        upvoters,
+        downvoters,
+        minimumBlockThreshold,
+        maximumBlockThreshold,
+        ethersSpentInUpvotes,
+        ethersSpentInDownvotes,
+        veriSpentInUpvotes,
+        veriSpentInDownvotes,
+        pubKey,
+        vote
+    };
 }
 
 
+async function getArticles(address) {
+    // Connect to the network
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    // We connect to the Contract using a Provider, so we will only
+    // have read-only access to the Contract
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    const totalArticles = await truthHubContractInstance.totalArticles();
+    const articles = [];
+    let votedArticles = await truthHubContractInstance.getReaderArticlesVoted(address);
+    let publishedArticles = await truthHubContractInstance.getAuthorArticlesPublished(address);
+
+    // map votedArticles hexadecimal x to decimal x
+    votedArticles = votedArticles.map((x) => parseInt(x._hex, 16));
+    publishedArticles = publishedArticles.map((x) => parseInt(x._hex, 16));
+
+
+    for (let articleId = 1; articleId <= totalArticles; articleId++) {
+        const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
+        const isVoteOpen = await truthHubContractInstance.isVoteOpen(articleId);
+        
+        // if the article is not in votedArticles
+        if (isVoteOpen && !votedArticles.includes(articleId) && !publishedArticles.includes(articleId)) {
+            articles.push(articleInfo); 
+        }            
+    }
+    return articles;
+}
+
+
+function RenderArticles({ address, userVotePrice, userMaximumBoost }) {
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
+    const [articles, setArticles] = useState([]);
+    useEffect(() => {
+        getArticles(address).then(setArticles)
+    }, []);
+
+    const cards = articles.map((article) => {
+        return <div>
+            <ArticleVisualizer article={article} userVotePrice={userVotePrice} userMaximumBoost={userMaximumBoost} veriTokenContractInstance={veriTokenContractInstance}/>
+        </div>
+    });
+    return <div align='gird grid-row-1 place-items-center'>{cards}</div>
+}
+
+function Articles() {
+    const { contract } = useContract(TruthHubAddress);
+
+    const connectionStatus = useConnectionStatus();
+    const isWalletConnected = connectionStatus === "connected";
+
+    const address = useAddress();
+
+    const {data: vP, isLoading: isLoadingVP} = useContractRead(contract, "etherVotePrice");
+    const {data: eWV, isLoading: isLoadingEWV} = useContractRead(contract, "endWeightVote");
+    const {data: uVP, isLoading: isLoadingUVP} = useContractRead(contract, "computeVotePrice", [address]);
+    const {data: uMB, isLoading: isLoadingUMB} = useContractRead(contract, "computeMaximumBoost", [address]);
+ 
+    const isLoadingAll = isLoadingUVP || isLoadingUMB || isLoadingVP || isLoadingEWV;     
+
+    return (
+        <div className='flex flex-col min-h-screen'>
+            {isWalletConnected ? (
+                <div>
+                    { isLoadingAll ? (
+                        <p className="mx-20 my-10">Vote Price and maximum boost are computing</p>
+                    ) : (
+                        <div className="grid grid-rows-4">
+                            {/**Row 1 */}
+                            <div className='mx-20 my-10'>
+                                <p className='text-l mb-8'>
+                                    In the following table are presented all the information about the voting system
+                                </p>
+                                <VoteTableInformations ethVotePrice={Number(vP) * 10 ** -18}/>
+                                <p className='text-l my-8'>
+                                    Notice that:<br/>
+                                    Each Veri you spend will boost your vote weight by 1<br/>
+                                    By paying more ETH you won't increase your vote weight but you will have higher rewards at the end of the vote<br/>
+                                    The vote for an article will close upon reaching the vote weight threshold {parseInt(Number(eWV) * 10 ** -18)} or upon reaching the maximum block threshold
+                                </p>
+                                <RenderArticles address={address} userVotePrice={Number(uVP) * 10 ** -18} userMaximumBoost={Number(uMB) * 10 ** -18}/>
+                            </div>
+                        </div>
+                        
+                    )}                    
+                </div>
+               ) : (
+                <h1 className='flex text-4xl font-medium mx-auto mt-10'>Connect your wallet to see the articles</h1>
+            )}
+        </div>
+    );
+}
+
+export default Articles; 

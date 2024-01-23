@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import Navbar from "./components/Navbar";
 import App from "./App";
+import Footer from "./components/Footer";
 import { ThirdwebProvider, metamaskWallet } from "@thirdweb-dev/react";
 import { Sepolia } from "@thirdweb-dev/chains";
 import { NostrProvider } from "nostr-react";
@@ -12,9 +14,6 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 const relayUrls = [
 	"wss://relay.damus.io",
-	"wss://nostr-pub.wellorder.net",
-	"wss://nostr.mom",
-	"wss://nostr.slothy.win",
   ];
 
 root.render(
@@ -25,7 +24,11 @@ root.render(
 				clientId={process.env.REACT_APP_TEMPLATE_CLIENT_ID}
 				supportedWallets={[metamaskWallet()]}
 			>
-				<App />
+				<div data-theme='synthwave'>
+					<Navbar/>
+					<App />
+					<Footer/>
+				</div>
 			</ThirdwebProvider>
 		</NostrProvider>
 	</React.StrictMode>

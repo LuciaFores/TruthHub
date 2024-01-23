@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Turthhub App</title>
+  </head>
+  <body>
+    Turthhub!
+    <!-- module allows us to importing module in our code
+        because we are importing ethers-->
+    <script src="./turthhub.js" type="module"></script>
+
+    <button id="connectButton">connect</button>
+    <button id="registerButton">register Author</button>
+    <button id="computePublishPrice">Compute Publish Price</button>
+    <button id="getAuthorReputation">Get Author Reputation</button>
+    <button id="withdrawButton">withdraw</button>
+    <button id="publishArticle">Publish Article</button>
+    <button id="articleId">Get Article Id</button>
+    <button id="vote">Vote For Article</button>
+    <button id="gettingUpvoters">Getting number of Upvoters</button>
+    <!-- form -->
+    <label for="RegistrationOfAuthor">Registration for author</label>
+    <input id="signature" placeholder="signature" />
+    <input id="nostrPublicKey" placeholder="npub" />
+    <!-- form -->
+    <!-- form -->
+    <label for="inputForAddress"> Eth Adress</label>
+    <input id="ethAddress" placeholder="ETH address" />
+    <!-- form -->
+    <!-- form -->
+    <label for="inputForEventId">Nostr EventId</label>
+    <input id="nostrEventId" placeholder="eventId" />
+    <!-- form -->
+    <!-- form -->
+    <label for="inputForNumberOftoKEN">Number of Tokens</label>
+    <input id="numberOfToken" placeholder="10" />
+    <!-- form -->
+    <div>
+      <input type="checkbox" id="voteExpressed" />
+      <label for="coding">Express The Vote</label>
+    </div>
+  </body>
+</html>
