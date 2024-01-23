@@ -9,6 +9,8 @@ import { ethers } from "ethers";
 // 1000000000000000 -> 0.0001
 // 1000000000000000 
 
+// 1000000000000000
+
 
 async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) {
 
@@ -101,16 +103,42 @@ async function getArticles(address) {
 
 function RenderCompactArticles({ address }) {
     const [articles, setArticles] = useState([]);
+
+    const [articleIdValue, setArticleIdValue] = useState('');
+
+    const handleArticleIdChange = (e) => {
+        setArticleIdValue(e.target.value);
+    };
+
     useEffect(() => {
         getArticles(address).then(setArticles)
     }, [address]);
+
+    if (articles.length === 0) {
+        return <div></div>
+    }
 
     const cards = articles.map((article) => {
         return <div>
         <CompactArticleVisualizer article={article}/>
         </div>
     });
-    return <div align='gird grid-row-1 place-items-center'>{cards}</div>
+    return <div>
+        <div align='gird grid-row-1 place-items-center'>{cards}</div>
+        <div className="grid grid-cols-3">
+            <div className="mt-10 ml-20">
+                <label className="form-control w-full max-w-xs">
+                    <div className="label">
+                        <span className="label-text">Insert the Article Id</span>
+                    </div>
+                    <input className="input input-primary w-full max-w-xs" type="text" placeholder="Article Id" value={articleIdValue} onChange={handleArticleIdChange}/>
+                </label>
+            </div>  
+            <div className="flex mt-20 h-10">
+                <ClaimReward articleId={articleIdValue} />
+            </div>
+        </div>
+        </div>
 }
 
 async function getAmountVeri(address) {
@@ -135,12 +163,6 @@ function UserProfile() {
     }, [address]);
 
     const { contract } = useContract(TruthHubAddress);
-
-    const [articleIdValue, setArticleIdValue] = useState('');
-
-    const handleArticleIdChange = (e) => {
-        setArticleIdValue(e.target.value);
-    };
 
     const connectionStatus = useConnectionStatus();
     const isWalletConnected = connectionStatus === "connected";
@@ -175,19 +197,7 @@ function UserProfile() {
                                 />
                                 <p className="text-2xl font-medium mx-20 mt-10">Claim Rewards</p> 
                                 <RenderCompactArticles address={address}/>                  
-                                <div className="grid grid-cols-3">
-                                    <div className="mt-10 ml-20">
-                                        <label className="form-control w-full max-w-xs">
-                                            <div className="label">
-                                                <span className="label-text">Insert the Article Id</span>
-                                            </div>
-                                            <input className="input input-primary w-full max-w-xs" type="text" placeholder="Article Id" value={articleIdValue} onChange={handleArticleIdChange}/>
-                                        </label>
-                                    </div>  
-                                    <div className="flex mt-20 h-10">
-                                        <ClaimReward articleId={articleIdValue} />
-                                    </div>
-                                </div>
+                                
                             </div> 
                             )
                     }

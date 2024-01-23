@@ -30,11 +30,10 @@ function ModalArticle({article}){
     return <div>{modal}</div>
 }
 
-export default function CompactArticleVisualizer({article}){
+export default function CompactBestArticleVisualizer({article}){
     return(
         <div className="grid grid-cols-5 mx-20">
             <span className="mb-4">Article Id : {article.articleId}</span>
-            <span className="mb-4">{article.isClaimable ? "Claimable" : "Pending"}</span>
             <span className="mb-4">Upvotes Weight : {parseInt(article.upvotes * 10**-18)}</span>
             <span className="mb-4">Downvotes Weight : {parseInt(article.downvotes *10**-18)}</span>
             <ModalArticle article={article}/>

@@ -15,6 +15,7 @@
     "@thirdweb-dev/sdk": "^4",
     "assert": "^2.0.0",
     "bech32-converting": "^1.0.9",
+    "bignumber.js": "^4.0.4",
     "browserify-zlib": "latest",
     "ethers": "^5",
     "flowbite": "^2.2.0",

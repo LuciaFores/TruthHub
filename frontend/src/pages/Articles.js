@@ -80,8 +80,9 @@ async function getArticles(address) {
 
     for (let articleId = 1; articleId <= totalArticles; articleId++) {
         const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
+        const isVoteOpen = await truthHubContractInstance.isVoteOpen(articleId);
         // if the article is not in votedArticles
-        if (!votedArticles.includes(articleId)) {
+        if (isVoteOpen && !votedArticles.includes(articleId)) {
             articles.push(articleInfo); 
         }            
     }

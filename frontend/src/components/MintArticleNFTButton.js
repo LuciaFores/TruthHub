@@ -7,12 +7,11 @@ export default function MintArticleNFT({articleId, nftAmount}) {
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            await contract.call("mintArticleNFT", [articleId, nftAmount]);
-            console.log("Congrats on minting the NFTs!");
+            await contract.call("mintArticleNFT", [parseInt(articleId), parseInt(nftAmount)]);
         }}
-        onError={(error) => console.log(error)}
+        onError={(error) => alert(error)}
         >
-            Claim your reward!
+            Mint Article NFTs!
         </Web3Button>
     );
 }
