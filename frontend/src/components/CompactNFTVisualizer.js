@@ -31,12 +31,12 @@ function ModalArticle({article}){
     return <div>{modal}</div>
 }
 
-export default function CompactBestArticleVisualizer({article}){
+export default function CompactNFTVisualizer({article}){
     return(
         <div className="grid grid-cols-5 mx-20">
             <span className="mb-4">Article Id : {article.articleId}</span>
-            <span className="mb-4">Upvotes Weight : {parseInt(article.upvotes * 10**-18)}</span>
-            <span className="mb-4">Downvotes Weight : {parseInt(article.downvotes *10**-18)}</span>
+            <span className="mb-4">Amount : {article.amount}</span>
+            <span className="mb-4">Author : {article.author}</span>
             <ModalArticle article={article}/>
         </div>
     );

@@ -73,7 +73,8 @@ export default function ArticleVisualizer({ article, userVotePrice, userMaximumB
                         <div className="divider divider-horizontal"></div>
                         <div className="grid grid-rows-2 gap-0">
                             <span className="h-24 card bg-base-300 rounded-box">
-                                <p className="text-l mx-4 mt-2">Published by: {converter('npub').toBech32(article.pubKey)}</p>
+                                <p className="text-l mx-4"> Author (Nostr address): {converter('npub').toBech32(article.pubKey)}</p>
+                                <p className="text-l mx-4"> Author (Ethereum address): {article.author}</p>
                                 <p className="text-l mx-4">Event Id: {article.eventId}</p>
                                 <p className="text-l mx-4">Article Id: {article.articleId}</p>
                             </span>

@@ -2,6 +2,7 @@ export const TruthHubAddress = "0xD827C819bA242f23b03Dac0fF1Ed40514Cfe861F";
 // 0x42c071f5aD414159A9FF65085868d29f2B9D97e9
 export const VeriAddress = "0xd7e6463c1fA9AE6aec65Ab5Dd797DC497b13F520";
 // 0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2
+export const ArticleNFTAddress = "0x281582f333d63CB47C9eF7D9dcCd9a2a47737688";
 
 export const VeriAbi = [
   {
@@ -22,8 +23,59 @@ export const VeriAbi = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
+
+export const ArticleNFTAbi = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+]
 
 export const TruthHubAbi = [
   {
@@ -552,25 +604,6 @@ export const TruthHubAbi = [
   {
     "inputs": [],
     "name": "etherVotePrice",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "eventIdToArticleId",
     "outputs": [
       {
         "internalType": "uint256",

@@ -11,7 +11,8 @@ function ModalArticle({article}){
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
             </form>
             <h3 className="font-bold text-lg pb-4">Article Id: {article.articleId}</h3>
-            <p> <span className="font-bold">Published by:</span> {converter('npub').toBech32(article.pubKey)}</p>
+            <p> <span className="font-bold">Author (Nostr address):</span> {converter('npub').toBech32(article.pubKey)}</p>
+            <p> <span className="font-bold">Author (Ethereum address):</span> {article.author}</p>
             <p className="pb-4"> <span className="font-bold">Event Id:</span> {article.eventId}</p>
             <p><span className="font-bold">Upvotes weights:</span> {parseInt(article.upvotes * 10**-18)}</p>
             <p><span className="font-bold">Downvotes weights:</span> {parseInt(article.downvotes * 10**-18)}</p>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useConnectionStatus, useAddress, useContract, useContractRead } from "@thirdweb-dev/react";
-import { TruthHubAddress, TruthHubAbi, VeriAddress, VeriAbi } from '../contracts.js';
+import { TruthHubAddress, TruthHubAbi, VeriAddress, VeriAbi, ArticleNFTAbi, ArticleNFTAddress } from '../contracts.js';
 import ClaimReward from "../components/ClaimRewardButton";
 import UserTableInformations from "../components/UserTableInformations";
 import CompactArticleVisualizer from "../components/CompactArticleVisualizer";
+import CompactNFTVisualizer from "../components/CompactNFTVisualizer";
 import { ethers } from "ethers";
 
 // 1000000000000000 -> 0.0001
@@ -154,6 +155,50 @@ async function getAmountVeri(address) {
     return veriAmount;
 }
 
+function RenderNFTsOwned({ address }) {
+    const [articles, setArticles] = useState([]);
+
+    useEffect(() => {
+        getArticlesNFT(address).then(setArticles)
+    }, [address]);
+
+    if (articles.length === 0) {
+        return <div></div>
+    }
+
+    const cards = articles.map((article) => {
+        return <div>
+        <CompactNFTVisualizer article={article}/>
+        </div>
+    });
+    return <div align='gird grid-row-1 place-items-center'>{cards}</div>
+}
+
+async function getArticlesNFT(address) {
+    // Connect to the network
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    // We connect to the Contract using a Provider, so we will only
+    // have read-only access to the Contract
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let articleNFTContractInstance = new ethers.Contract(ArticleNFTAddress, ArticleNFTAbi, provider);
+    const totalArticles = await truthHubContractInstance.totalArticles();
+    const articles = [];
+
+    for (let articleId = 1; articleId <= totalArticles; articleId++) {
+        
+        let amount = await articleNFTContractInstance.balanceOf(address, articleId);
+        amount = parseInt(amount._hex, 16);
+        // if the article is not in votedArticles
+        if (amount > 0) {
+            const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
+            // create new field in articleInfo struct called amount
+            articleInfo.amount = amount;
+            articles.push(articleInfo); 
+        }            
+    }
+    return articles;
+}
+
 function UserProfile() {
     const address = useAddress();
 
@@ -184,7 +229,7 @@ function UserProfile() {
                         isLoadingAll && address === undefined ? (
                             <p className="flex text-4xl font-medium mx-auto mt-10">Loading Profile Page...</p>
                             ):(
-                            <div className="grid grid-rows-6">
+                            <div className="grid grid-rows-8">
                                 <p className="text-4xl font-medium mx-auto mt-10">Welcome {address}!</p>
                                 <p className="text-2xl font-medium mx-20 mt-10">User Statistics</p>
                                 <UserTableInformations
@@ -196,8 +241,9 @@ function UserProfile() {
                                 maximumBoost={Number(mB) * 10 ** -18}
                                 />
                                 <p className="text-2xl font-medium mx-20 mt-10">Claim Rewards</p> 
-                                <RenderCompactArticles address={address}/>                  
-                                
+                                <RenderCompactArticles address={address}/>  
+                                <p className="text-2xl font-medium mx-20 mt-10">NFTs Owned</p>
+                                <RenderNFTsOwned address={address}/>                
                             </div> 
                             )
                     }

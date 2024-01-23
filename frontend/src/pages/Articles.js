@@ -74,15 +74,19 @@ async function getArticles(address) {
     const totalArticles = await truthHubContractInstance.totalArticles();
     const articles = [];
     let votedArticles = await truthHubContractInstance.getReaderArticlesVoted(address);
+    let publishedArticles = await truthHubContractInstance.getAuthorArticlesPublished(address);
 
     // map votedArticles hexadecimal x to decimal x
     votedArticles = votedArticles.map((x) => parseInt(x._hex, 16));
+    publishedArticles = publishedArticles.map((x) => parseInt(x._hex, 16));
+
 
     for (let articleId = 1; articleId <= totalArticles; articleId++) {
         const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
         const isVoteOpen = await truthHubContractInstance.isVoteOpen(articleId);
+        
         // if the article is not in votedArticles
-        if (isVoteOpen && !votedArticles.includes(articleId)) {
+        if (isVoteOpen && !votedArticles.includes(articleId) && !publishedArticles.includes(articleId)) {
             articles.push(articleInfo); 
         }            
     }

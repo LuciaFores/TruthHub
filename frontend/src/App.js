@@ -188,6 +188,19 @@ function App() {
     "wss://nostr.hifish.org/"
   ]
 }
+
+{
+  "content": "SURROUND YOURSELF WITH GOOD PEOPLE AND THE REST WILL WORK ITSELF OUT 🫡",
+  "created_at": 1705975775,
+  "id": "ccd730484a1d1282c9986387014e281e6f5f5abc731b49f3eed72d55b8d93533",
+  "kind": 1,
+  "pubkey": "04c915daefee38317fa734444acee390a8269fe5810b2241e5e6dd343dfbecc9",
+  "sig": "9149593912992bef759924cc9cbaa78d594bd0c28446ed2d8cd0d70e15d93b0075d4189809e1b2f626913f2d9a59fc1bb1af379237abf9be09d2f2e5cb2aa29f",
+  "tags": [],
+  "relays": [
+    "wss://nostr.wine/"
+  ]
+}
 */
 
 export default App;

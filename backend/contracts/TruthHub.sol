@@ -464,6 +464,8 @@ contract TruthHub is IERC1155Receiver {
                 ) {
                     return true;
                 }
+            } else {
+                return true;
             }
         }
         return false;

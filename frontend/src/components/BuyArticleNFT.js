@@ -1,18 +1,18 @@
 import { Web3Button } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
 
-export default function BuyArticleNFT({articleId, nftAmount, buyCost}) {
+export default function BuyArticleNFT({articleId, nftAmount, buyPrice}) {
     return(
         <Web3Button
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
         action={async (contract) => {
-            const overrides = {value : buyCost};
+            const overrides = {value : String(buyPrice)};
             await contract.call("buyArticleNFT", [articleId, nftAmount], overrides);
-            console.log("Congrats on buying the NFTs!");
         }}
+        onError={(error) => alert(error)}
         >
-            Claim your reward!
+            Buy NFTs!
         </Web3Button>
     );
 }
