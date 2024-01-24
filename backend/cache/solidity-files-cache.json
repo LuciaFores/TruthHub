@@ -574,8 +574,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/TruthHub.sol": {
-      "lastModificationDate": 1705954091660,
-      "contentHash": "03581b5dc59da4ca13ac7861d2f718f8",
+      "lastModificationDate": 1706047810012,
+      "contentHash": "6174a697c55bbfb44ef8f922188494be",
       "sourceName": "contracts/TruthHub.sol",
       "solcConfig": {
         "version": "0.8.22",
@@ -1261,8 +1261,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/TruthHubDemo.sol": {
-      "lastModificationDate": 1705954054739,
-      "contentHash": "0d9df2ed10f0c377e883e4b87dfd405f",
+      "lastModificationDate": 1706047810016,
+      "contentHash": "5de37b9dd3c03a38337b5f9d99acc200",
       "sourceName": "contracts/TruthHubDemo.sol",
       "solcConfig": {
         "version": "0.8.22",

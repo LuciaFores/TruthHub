@@ -1,8 +1,8 @@
-export const TruthHubAddress = "0xD827C819bA242f23b03Dac0fF1Ed40514Cfe861F";
+export const TruthHubAddress = "0xFA330C0cd674D914fe6b352B78B365Ddb70845b0";
 // 0x42c071f5aD414159A9FF65085868d29f2B9D97e9
-export const VeriAddress = "0xd7e6463c1fA9AE6aec65Ab5Dd797DC497b13F520";
+export const VeriAddress = "0x9F26Da9CaE65270Fc4105d4b9Bc679cee7519f76";
 // 0xBdba691CdAB8A9fb18c1FB223CF6F23CE3e308E2
-export const ArticleNFTAddress = "0x281582f333d63CB47C9eF7D9dcCd9a2a47737688";
+export const ArticleNFTAddress = "0x0C6f545B5f0894f1819334c519Cba850bBdD3781";
 
 export const VeriAbi = [
   {
