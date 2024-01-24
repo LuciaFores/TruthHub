@@ -3,12 +3,43 @@ import VoteTableInformations from '../components/VoteTableInformations.js';
 import { TruthHubAbi, TruthHubAddress, VeriAbi, VeriAddress } from '../contracts.js';
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { useContract, useContractRead, useAddress, useConnectionStatus } from "@thirdweb-dev/react";
+import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
 
+async function getEtherVotePrice(){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let etherVotePrice = await truthHubContractInstance.etherVotePrice();
+    return etherVotePrice;
+}
 
+async function getEndWeightVote(){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let endWeightVote = await truthHubContractInstance.endWeightVote();
+    return endWeightVote;
+}
+
+async function getUserVotePrice(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let userVotePrice = undefined;
+    if(address !== undefined){
+        userVotePrice = await truthHubContractInstance.computeVotePrice(address);
+    }
+    return userVotePrice;
+}
+
+async function getUserMaximumBoost(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let userMaximumBoost = undefined;
+    if(address !== undefined){
+        userMaximumBoost = await truthHubContractInstance.computeMaximumBoost(address);
+    }
+    return userMaximumBoost;
+}
 
 async function getArticleInfo(truthHubContractInstance, articleId) {
-
     articleId = parseInt(articleId);
     let [ , 
         eventId,
@@ -114,26 +145,39 @@ function RenderArticles({ address, userVotePrice, userMaximumBoost }) {
 }
 
 function Articles() {
-    const { contract } = useContract(TruthHubAddress);
-
     const connectionStatus = useConnectionStatus();
     const isWalletConnected = connectionStatus === "connected";
 
     const address = useAddress();
 
-    const {data: vP, isLoading: isLoadingVP} = useContractRead(contract, "etherVotePrice");
-    const {data: eWV, isLoading: isLoadingEWV} = useContractRead(contract, "endWeightVote");
-    const {data: uVP, isLoading: isLoadingUVP} = useContractRead(contract, "computeVotePrice", [address]);
-    const {data: uMB, isLoading: isLoadingUMB} = useContractRead(contract, "computeMaximumBoost", [address]);
+    const [etherVotePrice, setEtherVotePrice] = useState(undefined);
+    useEffect(() => {
+        getEtherVotePrice().then(setEtherVotePrice);
+    }, []);
+
+    const [endWeightVote, setEndWeightVote] = useState(undefined);
+    useEffect(() => {
+        getEndWeightVote().then(setEndWeightVote);
+    }, []);
+
+    const [userVotePrice, setUserVotePrice] = useState(undefined);
+    useEffect(() => {
+        getUserVotePrice(address).then(setUserVotePrice);
+    }, [address]);
+
+    const [userMaximumBoost, setUserMaximumBoost] = useState(undefined);
+    useEffect(() => {
+        getUserMaximumBoost(address).then(setUserMaximumBoost);
+    }, [address]);
  
-    const isLoadingAll = isLoadingUVP || isLoadingUMB || isLoadingVP || isLoadingEWV;     
+    const isLoading = address === undefined;     
 
     return (
         <div className='flex flex-col min-h-screen'>
             {isWalletConnected ? (
                 <div>
-                    { isLoadingAll ? (
-                        <p className="mx-20 my-10">Vote Price and maximum boost are computing</p>
+                    { isLoading ? (
+                        <p className="mx-20 my-10">Loading page...</p>
                     ) : (
                         <div className="grid grid-rows-4">
                             {/**Row 1 */}
@@ -141,17 +185,16 @@ function Articles() {
                                 <p className='text-l mb-8'>
                                     In the following table are presented all the information about the voting system
                                 </p>
-                                <VoteTableInformations ethVotePrice={Number(vP) * 10 ** -18}/>
+                                <VoteTableInformations ethVotePrice={Number(etherVotePrice) * 10 ** -18}/>
                                 <p className='text-l my-8'>
                                     Notice that:<br/>
                                     Each Veri you spend will boost your vote weight by 1<br/>
                                     By paying more ETH you won't increase your vote weight but you will have higher rewards at the end of the vote<br/>
-                                    The vote for an article will close upon reaching the vote weight threshold {parseInt(Number(eWV) * 10 ** -18)} or upon reaching the maximum block threshold
+                                    The vote for an article will close upon reaching the vote weight threshold {parseInt(Number(endWeightVote) * 10 ** -18)} or upon reaching the maximum block threshold
                                 </p>
-                                <RenderArticles address={address} userVotePrice={Number(uVP) * 10 ** -18} userMaximumBoost={Number(uMB) * 10 ** -18}/>
+                                <RenderArticles address={address} userVotePrice={Number(userVotePrice) * 10 ** -18} userMaximumBoost={Number(userMaximumBoost) * 10 ** -18}/>
                             </div>
                         </div>
-                        
                     )}                    
                 </div>
                ) : (

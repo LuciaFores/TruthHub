@@ -1,33 +1,23 @@
-import { useState } from "react";
-import { useConnectionStatus, useContract, useContractRead, useAddress } from "@thirdweb-dev/react";
-import { TruthHubAddress } from "../contracts";
+import { useState, useEffect } from "react";
+import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
+import { TruthHubAddress, TruthHubAbi } from "../contracts";
+import { ethers } from "ethers";
 import RegisterAuthorButton from "../components/RegisterAuthorButton";
 import registration_author from "../images/registration_author.svg";
 
-export default function RegisterAuthor() {
-    const { contract } = useContract(TruthHubAddress);
+async function getIsAuthor(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let isAuthor = undefined;
+    if(address !== undefined){
+        isAuthor = await truthHubContractInstance.isAuthor(address);
+    }
+    return isAuthor;
+}
 
-    const [nostrPubKeyValue, setnostrPubKeyValue] = useState('');
-    const [signatureValue, setSignatureValue] = useState('');
-
-    const handlePubKeyChange = (e) => {
-        setnostrPubKeyValue(e.target.value);
-    };
-
-    const handleSignatureChange = (e) => {
-        setSignatureValue(e.target.value);
-    };
-
-    const connectionStatus = useConnectionStatus();
-    const isWalletConnected = connectionStatus === "connected";
-
-    const address = useAddress();
-
-    const {data: isAuthor, isLoading: isLoadingAuthor} = useContractRead(contract, "isAuthor", [address]);
-
-
-    return(
-        <div className="flex flex-col min-h-screen">
+function Intestetation(){
+    return (
+        <div>
             <div>
                 <p className="flex text-8xl font-medium my-10 place-content-center">Become a TruthHub author!</p>
             </div>
@@ -44,36 +34,75 @@ export default function RegisterAuthor() {
                     </p>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function AuthorRegistrationDiv(){
+    const [nostrPubKeyValue, setnostrPubKeyValue] = useState('');
+    const [signatureValue, setSignatureValue] = useState('');
+
+    const handlePubKeyChange = (e) => {
+        setnostrPubKeyValue(e.target.value);
+    };
+
+    const handleSignatureChange = (e) => {
+        setSignatureValue(e.target.value);
+    };
+
+    return (
+        <div>
+            <div className="container grid grid-cols-3 mx-20">
+                <div>
+                    <label className="form-control w-full max-w-xs">
+                        <div className="label">
+                            <span className="label-text">Insert your Signature</span>
+                        </div>
+                        <input type="text" placeholder="Signature" value={signatureValue} onChange={handleSignatureChange} className="input input-bordered w-full max-w-xs" />
+                    </label>
+                </div>
+                <div>
+                    <label className="form-control w-full max-w-xs">
+                    <div className="label">
+                        <span className="label-text">Insert your Nostr Public Key</span>
+                    </div>
+                    <input type="text" placeholder="Nostr Public Key" value={nostrPubKeyValue} onChange={handlePubKeyChange} className="input input-bordered w-full max-w-xs" />
+                    </label>
+                </div>
+                <div className="flex place-content-center my-8">
+                    <RegisterAuthorButton signature={signatureValue} nostrPublicKey={nostrPubKeyValue}/> 
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function RegisterAuthor() {
+    const connectionStatus = useConnectionStatus();
+    const isWalletConnected = connectionStatus === "connected";
+
+    const address = useAddress();
+
+    const [isAuthor, setIsAuthor] = useState(undefined);
+    useEffect(() => {
+        getIsAuthor(address).then(setIsAuthor)
+    } , [address]);   
+
+    const isLoading = address === undefined;
+
+    return(
+        <div className="flex flex-col min-h-screen">
+            <Intestetation />
             {isWalletConnected ? (
                 <div>
-                    { isLoadingAuthor ? (
+                    { isLoading ? (
                         <p className="mx-20">Loading page...</p>
                     ) : (
                         <div>
                             {isAuthor ? (
                                 <p className="mx-20">You are already a TruthHub author!</p>
                             ) : (
-                                <div className="container grid grid-cols-3 mx-20">
-                                    <div>
-                                        <label className="form-control w-full max-w-xs">
-                                            <div className="label">
-                                                <span className="label-text">Insert your Signature</span>
-                                            </div>
-                                            <input type="text" placeholder="Signature" value={signatureValue} onChange={handleSignatureChange} className="input input-bordered w-full max-w-xs" />
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <label className="form-control w-full max-w-xs">
-                                        <div className="label">
-                                            <span className="label-text">Insert your Nostr Public Key</span>
-                                        </div>
-                                        <input type="text" placeholder="Nostr Public Key" value={nostrPubKeyValue} onChange={handlePubKeyChange} className="input input-bordered w-full max-w-xs" />
-                                        </label>
-                                    </div>
-                                    <div className="flex place-content-center my-8">
-                                        <RegisterAuthorButton signature={signatureValue} nostrPublicKey={nostrPubKeyValue}/> 
-                                    </div>
-                                </div>
+                                <AuthorRegistrationDiv />
                             )}
                         </div>
                     )}

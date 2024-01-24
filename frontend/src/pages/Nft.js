@@ -1,11 +1,35 @@
 import { TruthHubAbi, TruthHubAddress, VeriAbi, VeriAddress, ArticleNFTAbi, ArticleNFTAddress } from '../contracts.js';
-import { useContract, useContractRead, useAddress, useConnectionStatus } from "@thirdweb-dev/react";
+import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import CompactBestArticleVisualizer from "../components/CompactBestArticleVisualizer";
 import CompactNFTVisualizer from '../components/CompactNFTVisualizer.js';
 import MintArticleNFT from "../components/MintArticleNFTButton";
 import BuyArticleNFT from '../components/BuyArticleNFT.js';
+
+async function getIsBestAuthor(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let isBestAuthor = undefined;
+    if(address !== undefined){
+        isBestAuthor = await truthHubContractInstance.isBestAuthor(address);
+    }
+    return isBestAuthor;
+}
+
+async function getMintPrice(){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let mintPrice = await truthHubContractInstance.articleNFTMintInVeri();
+    return mintPrice;
+}
+
+async function getBuyPrice(){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let buyPrice = await truthHubContractInstance.articleNFTBuyInEther();
+    return buyPrice;
+}
 
 async function getArticleInfo(truthHubContractInstance, articleId) {
 
@@ -230,24 +254,34 @@ function Nft(){
     // controllo se utente è autore o meno
     // se è autore carico la sezione con il bottone per il mint
     // indipendentemente da tutto carico la sezione con il compra
-    const { contract } = useContract(TruthHubAddress);
 
     const connectionStatus = useConnectionStatus();
     const isWalletConnected = connectionStatus === "connected";
 
     const address = useAddress();
 
-    const {data: isBestAuthor, isLoading: isLoadingBIA} = useContractRead(contract, "isBestAuthor", [address]);
-    const {data: mintPrice, isLoading: isLoadingMP} = useContractRead(contract, "articleNFTMintInVeri");
-    const {data: buyPrice, isLoading: isLoadingBP} = useContractRead(contract, "articleNFTBuyInEther");
+    const [isBestAuthor, setIsBestAuthor] = useState(undefined);
+    useEffect(() => {
+        getIsBestAuthor(address).then(setIsBestAuthor)
+    }, [address]);
 
-    const isLoadingAll = isLoadingBIA || isLoadingMP || isLoadingBP;
+    const [mintPrice, setMintPrice] = useState(undefined);
+    useEffect(() => {
+        getMintPrice().then(setMintPrice)
+    }, []);
+
+    const [buyPrice, setBuyPrice] = useState(undefined);
+    useEffect(() => {
+        getBuyPrice().then(setBuyPrice)
+    }, []);
+
+    const isLoading = address === undefined;
 
     return(
         <div className='flex flex-col min-h-screen'>
             {isWalletConnected ? (
                 <div>
-                    { isLoadingAll || address === undefined ? (
+                    { isLoading ? (
                         <p className="mx-20 my-10">Loading the page...</p>
                     ) : (
                         <div>

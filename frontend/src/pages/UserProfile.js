@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useConnectionStatus, useAddress, useContract, useContractRead } from "@thirdweb-dev/react";
+import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi, VeriAddress, VeriAbi, ArticleNFTAbi, ArticleNFTAddress } from '../contracts.js';
 import ClaimReward from "../components/ClaimRewardButton";
 import UserTableInformations from "../components/UserTableInformations";
@@ -7,11 +7,55 @@ import CompactArticleVisualizer from "../components/CompactArticleVisualizer";
 import CompactNFTVisualizer from "../components/CompactNFTVisualizer";
 import { ethers } from "ethers";
 
-// 1000000000000000 -> 0.0001
-// 1000000000000000 
+async function getAuthorReputation(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let authorReputation = undefined;
+    if(address !== undefined){
+        authorReputation = await truthHubContractInstance.getAuthorReputation(address);
+    }
+    return authorReputation;
+}
 
-// 1000000000000000
+async function getReaderReputation(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let readerReputation = undefined;
+    if(address !== undefined){
+        readerReputation = await truthHubContractInstance.getReaderReputation(address);
+    }
+    return readerReputation;
+}
 
+async function getPublishPrice(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let publishPrice = undefined;
+    if(address !== undefined){
+        publishPrice = await truthHubContractInstance.computePublishPrice(address);
+    }
+    return publishPrice;
+}
+
+async function getVotePrice(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let votePrice = undefined;
+    if(address !== undefined){
+        votePrice = await truthHubContractInstance.computeVotePrice(address);
+    }
+    return votePrice;
+}
+
+async function getMaximumBoost(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let maximumBoost = undefined;
+    if(address !== undefined){
+        maximumBoost = await truthHubContractInstance.computeMaximumBoost(address);
+    }
+    return maximumBoost;
+}
 
 async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) {
 
@@ -174,6 +218,8 @@ function RenderNFTsOwned({ address }) {
     return <div align='gird grid-row-1 place-items-center'>{cards}</div>
 }
 
+
+
 async function getArticlesNFT(address) {
     // Connect to the network
     let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -200,6 +246,9 @@ async function getArticlesNFT(address) {
 }
 
 function UserProfile() {
+    const connectionStatus = useConnectionStatus();
+    const isWalletConnected = connectionStatus === "connected";
+
     const address = useAddress();
 
     const [amountVeri, setAmountVeri] = useState(0);
@@ -207,18 +256,32 @@ function UserProfile() {
         getAmountVeri(address).then(setAmountVeri)
     }, [address]);
 
-    const { contract } = useContract(TruthHubAddress);
+    const [authorReputation, setAuthorReputation] = useState(undefined);
+    useEffect(() => {
+        getAuthorReputation(address).then(setAuthorReputation)
+    }, [address]);
 
-    const connectionStatus = useConnectionStatus();
-    const isWalletConnected = connectionStatus === "connected";
+    const [readerReputation, setReaderReputation] = useState(undefined);
+    useEffect(() => {
+        getReaderReputation(address).then(setReaderReputation)
+    }, [address]);
 
-    const {data: aR, isLoading: isLoadingAR} = useContractRead(contract, "getAuthorReputation", [address]);
-    const {data: rR, isLoading: isLoadingrR} = useContractRead(contract, "getReaderReputation", [address]);
-    const {data: pP, isLoading: isLoadingPP} = useContractRead(contract, "computePublishPrice", [address]);
-    const {data: vP, isLoading: isLoadingVP} = useContractRead(contract, "computeVotePrice", [address]);
-    const {data: mB, isLoading: isLoadingMB} = useContractRead(contract, "computeMaximumBoost", [address]);
+    const [publishPrice, setPublishPrice] = useState(undefined);
+    useEffect(() => {
+        getPublishPrice(address).then(setPublishPrice)
+    }, [address]);
 
-    const isLoadingAll = (isLoadingAR || isLoadingrR || isLoadingPP || isLoadingVP || isLoadingMB);
+    const [votePrice, setVotePrice] = useState(undefined);
+    useEffect(() => {
+        getVotePrice(address).then(setVotePrice)
+    }, [address]);
+
+    const [maximumBoost, setMaximumBoost] = useState(undefined);
+    useEffect(() => {
+        getMaximumBoost(address).then(setMaximumBoost)
+    }, [address]);
+
+    const isLoading = address === undefined;
 
 
     return (
@@ -226,7 +289,7 @@ function UserProfile() {
             {isWalletConnected ? (
                 <div>
                     {
-                        isLoadingAll && address === undefined ? (
+                        isLoading ? (
                             <p className="flex text-4xl font-medium mx-auto mt-10">Loading Profile Page...</p>
                             ):(
                             <div className="grid grid-rows-8">
@@ -234,11 +297,11 @@ function UserProfile() {
                                 <p className="text-2xl font-medium mx-20 mt-10">User Statistics</p>
                                 <UserTableInformations
                                 amountVeri={Number(amountVeri) * 10 ** -18}
-                                authorReputation={aR}
-                                readerReputation={rR}
-                                publishPrice={Number(pP) * 10 ** -18}
-                                votePrice={Number(vP) * 10 ** -18}
-                                maximumBoost={Number(mB) * 10 ** -18}
+                                authorReputation={authorReputation}
+                                readerReputation={readerReputation}
+                                publishPrice={Number(publishPrice) * 10 ** -18}
+                                votePrice={Number(votePrice) * 10 ** -18}
+                                maximumBoost={Number(maximumBoost) * 10 ** -18}
                                 />
                                 <p className="text-2xl font-medium mx-20 mt-10">Claim Rewards</p> 
                                 <RenderCompactArticles address={address}/>  
