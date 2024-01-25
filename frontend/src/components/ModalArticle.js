@@ -1,6 +1,6 @@
 import converter from "bech32-converting";
 
-function ModalArticle({article}){
+export default function ModalArticle({article}){
     const modal = <div>
         {/* You can open the modal using document.getElementById('ID').showModal() method */}
         <button className="btn" onClick={()=>document.getElementById('my_modal_3').showModal()}>More Info</button>
@@ -46,16 +46,4 @@ function ModalArticle({article}){
         </dialog>
     </div>
     return <div>{modal}</div>
-}
-
-export default function CompactBestArticleVisualizer({article}){
-    return(
-        <div className="grid grid-cols-5 mx-20">
-            <span className="mb-4">Article Id : {article.articleId}</span>
-            <span className="mb-4">Upvotes Weight : {parseInt(article.upvotes * 10**-18)}</span>
-            <span className="mb-4">Downvotes Weight : {parseInt(article.downvotes *10**-18)}</span>
-            <span className="mb-4 ml-10">isLegit : {String(article.isLegit)}</span>
-            <ModalArticle article={article}/>
-        </div>
-    );
 }

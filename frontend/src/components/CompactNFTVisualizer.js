@@ -25,6 +25,23 @@ function ModalArticle({article}){
             <p><span className="font-bold">Ethers spent in downvotes:</span> {article.ethersSpentInDownvotes *10**-18}</p>
             <p><span className="font-bold">Veri spent in upvotes:</span> {article.veriSpentInUpvotes * 10**-18}</p>
             <p><span className="font-bold">Veri spent in downvotes:</span> {article.veriSpentInDownvotes * 10**-18}</p>
+            <p><span className="font-bold">isLegit: </span> {String(article.isLegit)}</p>
+            <br/>
+            <p><span className="font-bold">Content: </span> {article.isLegit ? (
+                <div>
+                    <p>{article.content}</p>
+                </div>
+            ) : (
+                <div>
+                    <div className="card w-96 bg-error text-error-content">
+                        <div className="card-body items-center text-center">
+                            <h2 className="card-title">Article Not Legit!</h2>
+                            <p>Article content not displayed due to mismatch between
+                                who published the article and Nostr PubKey of original author on Nostr</p>
+                        </div>
+                    </div>
+                </div>
+            )}</p>
         </div>
         </dialog>
     </div>
@@ -37,6 +54,7 @@ export default function CompactNFTVisualizer({article}){
             <span className="mb-4">Article Id : {article.articleId}</span>
             <span className="mb-4">Amount : {article.amount}</span>
             <span className="mb-4">Author : {article.author}</span>
+            <span className="mb-4 ml-10">isLegit : {String(article.isLegit)}</span>
             <ModalArticle article={article}/>
         </div>
     );

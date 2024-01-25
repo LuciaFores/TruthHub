@@ -6,6 +6,7 @@ import CompactBestArticleVisualizer from "../components/CompactBestArticleVisual
 import CompactNFTVisualizer from '../components/CompactNFTVisualizer.js';
 import MintArticleNFT from "../components/MintArticleNFTButton";
 import BuyArticleNFT from '../components/BuyArticleNFT.js';
+import { useNostrEvents } from  "nostr-react"
 
 async function getIsBestAuthor(address){
     let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -64,6 +65,8 @@ async function getArticleInfo(truthHubContractInstance, articleId) {
 
     let pubKey = await truthHubContractInstance.authors(author);
     let nostrPubKey = pubKey.slice(2);
+    let isLegit = false;
+    let content = "";
 
 
 
@@ -82,7 +85,10 @@ async function getArticleInfo(truthHubContractInstance, articleId) {
         ethersSpentInDownvotes,
         veriSpentInUpvotes,
         veriSpentInDownvotes,
-        pubKey
+        pubKey,
+        nostrPubKey,
+        isLegit,
+        content
     };
 }
 
@@ -111,15 +117,27 @@ async function getBestArticles(address) {
     return articles;
 }
 
+async function getNostrPubKeyAuthors(articles){
+    // create the set of all the nostrPubKeyAuthors of the articles
+    if(articles === undefined){
+        return undefined;
+    }
+    let nostrPubKeyAuthorsSet = new Set();
+    for(let i = 0; i < articles.length; i++){
+        nostrPubKeyAuthorsSet.add(articles[i].nostrPubKey);
+    }
+    // transform the set into an array
+    nostrPubKeyAuthorsSet = Array.from(nostrPubKeyAuthorsSet);
+    return nostrPubKeyAuthorsSet;
+}
 
-function RenderCompactBestArticles({ address, mintPrice }) {
+
+function RenderCompactBestArticles({ bestArticles, nostrPubKeyAuthors, mintPrice }) {
 
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
     const signer = provider.getSigner();
     veriTokenContractInstance = veriTokenContractInstance.connect(signer);
-
-    const [articles, setArticles] = useState([]);
 
     const [articleIdValue, setArticleIdValue] = useState('');
 
@@ -133,17 +151,31 @@ function RenderCompactBestArticles({ address, mintPrice }) {
         setNftAmountValue(e.target.value);
     };
 
-    useEffect(() => {
-        getBestArticles(address).then(setArticles)
-    }, [address]);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthors,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < bestArticles.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (bestArticles[i].eventId === events[j].id) {
+                if (events[j].pubkey === bestArticles[i].nostrPubKey) {
+                    bestArticles[i].content = events[j].content;
+                    bestArticles[i].isLegit = true;
+                }
+            }
+        }
     }
 
-    const cards = articles.map((article) => {
+    const cards = bestArticles.map((bestArticle) => {
         return <div>
-        <CompactBestArticleVisualizer article={article}/>
+        <CompactBestArticleVisualizer article={bestArticle}/>
         </div>
     });
     return <div>
@@ -172,8 +204,7 @@ function RenderCompactBestArticles({ address, mintPrice }) {
         </div>
 }
 
-function RenderNFTsAvailable({buyPrice}) {
-    const [articles, setArticles] = useState([]);
+function RenderNFTsAvailable({articlesNFT, nostrPubKeyAuthorsNFT, buyPrice}) {
 
     const [articleIdValue, setArticleIdValue] = useState('');
 
@@ -187,17 +218,31 @@ function RenderNFTsAvailable({buyPrice}) {
         setNftAmountValue(e.target.value);
     };
 
-    useEffect(() => {
-        getArticlesNFT().then(setArticles)
-    }, []);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthorsNFT,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articlesNFT.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articlesNFT[i].eventId === events[j].id) {
+                if (events[j].pubkey === articlesNFT[i].nostrPubKey) {
+                    articlesNFT[i].content = events[j].content;
+                    articlesNFT[i].isLegit = true;
+                }
+            }
+        }
     }
 
-    const cards = articles.map((article) => {
+    const cards = articlesNFT.map((articleNFT) => {
         return <div>
-        <CompactNFTVisualizer article={article}/>
+        <CompactNFTVisualizer article={articleNFT}/>
         </div>
     });
     return <div>
@@ -223,7 +268,8 @@ function RenderNFTsAvailable({buyPrice}) {
             <BuyArticleNFT articleId={articleIdValue} nftAmount={nftAmountValue} buyPrice={buyPrice}/>
         </div>
     </div>
-    </div>}
+    </div>
+}
 
 async function getArticlesNFT() {
     // Connect to the network
@@ -275,7 +321,36 @@ function Nft(){
         getBuyPrice().then(setBuyPrice)
     }, []);
 
-    const isLoading = address === undefined;
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
+    const [bestArticles, setBestArticles] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getBestArticles(address).then(setBestArticles)
+    }, [address]);
+
+    const [nostrPubKeyAuthors, setNostrPubKeyAuthors] = useState(undefined);
+    useEffect(() => {
+        if (bestArticles === undefined) return;
+        getNostrPubKeyAuthors(bestArticles).then(setNostrPubKeyAuthors);
+    }, [bestArticles]);
+
+    const [articlesNFT, setArticlesNFT] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticlesNFT(address).then(setArticlesNFT)
+    }, [address]);
+ 
+    const [nostrPubKeyAuthorsNFT, setNostrPubKeyAuthorsNFT] = useState(undefined);
+    useEffect(() => {
+        if (articlesNFT === undefined) return;
+        getNostrPubKeyAuthors(articlesNFT).then(setNostrPubKeyAuthorsNFT);
+    }, [articlesNFT]);
+
+    const isLoading = address === undefined || bestArticles === undefined || nostrPubKeyAuthors === undefined || articlesNFT === undefined || nostrPubKeyAuthorsNFT === undefined;
 
     return(
         <div className='flex flex-col min-h-screen'>
@@ -290,7 +365,7 @@ function Nft(){
                                     <div>
                                         <p className="text-2xl font-medium mx-20 mt-10">Mint Article NFTs for your best articles</p>
                                         <p className="mx-20 mt-10">Each NFT you mint costs: {Number(mintPrice)*10**-18} Veri</p>
-                                        <RenderCompactBestArticles address={address} mintPrice={Number(mintPrice)}/>
+                                        <RenderCompactBestArticles bestArticles={bestArticles} nostrPubKeyAuthors={nostrPubKeyAuthors} mintPrice={Number(mintPrice)}/>
                                     </div>
                                 ) : (
                                     <></>
@@ -299,7 +374,7 @@ function Nft(){
                             <div>
                                 <p className="text-2xl font-medium mx-20 mt-10">Buy available Article NFTs</p>
                                 <p className="mx-20 mt-10">Each NFT you buy costs: {Number(buyPrice)*10**-18} ETH</p>
-                                <RenderNFTsAvailable buyPrice={Number(buyPrice)}/>
+                                <RenderNFTsAvailable articlesNFT={articlesNFT} nostrPubKeyAuthorsNFT={nostrPubKeyAuthorsNFT} buyPrice={Number(buyPrice)}/>
                             </div>
                         </div>
                     )}                    

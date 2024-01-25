@@ -217,10 +217,6 @@ function Articles() {
         if (articles === undefined) return;
         getNostrPubKeyAuthors(articles).then(setNostrPubKeyAuthors);
     }, [articles]);
-
-    console.log("Address ", address);
-    console.log("Articles ", articles);
-    console.log("NostrPubKeyAuthors ", nostrPubKeyAuthors);
  
 
     const isLoading = address === undefined || articles === undefined || nostrPubKeyAuthors === undefined;     

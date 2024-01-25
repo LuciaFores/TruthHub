@@ -6,6 +6,7 @@ import UserTableInformations from "../components/UserTableInformations";
 import CompactArticleVisualizer from "../components/CompactArticleVisualizer";
 import CompactNFTVisualizer from "../components/CompactNFTVisualizer";
 import { ethers } from "ethers";
+import { useNostrEvents } from  "nostr-react"
 
 async function getAuthorReputation(address){
     let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -90,6 +91,8 @@ async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) 
 
     let pubKey = await truthHubContractInstance.authors(author);
     let nostrPubKey = pubKey.slice(2);
+    let isLegit = false;
+    let content = "";
 
 
 
@@ -109,7 +112,10 @@ async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) 
         veriSpentInUpvotes,
         veriSpentInDownvotes,
         pubKey,
-        isClaimable
+        nostrPubKey,
+        isClaimable,
+        isLegit,
+        content
     };
 }
 
@@ -145,22 +151,47 @@ async function getArticles(address) {
     return articles;
 }
 
+async function getNostrPubKeyAuthors(articles){
+    // create the set of all the nostrPubKeyAuthors of the articles
+    if(articles === undefined){
+        return undefined;
+    }
+    let nostrPubKeyAuthorsSet = new Set();
+    for(let i = 0; i < articles.length; i++){
+        nostrPubKeyAuthorsSet.add(articles[i].nostrPubKey);
+    }
+    // transform the set into an array
+    nostrPubKeyAuthorsSet = Array.from(nostrPubKeyAuthorsSet);
+    return nostrPubKeyAuthorsSet;
+}
 
-function RenderCompactArticles({ address }) {
-    const [articles, setArticles] = useState([]);
-
+function RenderCompactArticles({ articles, nostrPubKeyAuthors }) {
     const [articleIdValue, setArticleIdValue] = useState('');
 
     const handleArticleIdChange = (e) => {
         setArticleIdValue(e.target.value);
     };
 
-    useEffect(() => {
-        getArticles(address).then(setArticles)
-    }, [address]);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthors,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articles.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articles[i].eventId === events[j].id) {
+                if (events[j].pubkey === articles[i].nostrPubKey) {
+                    articles[i].content = events[j].content;
+                    articles[i].isLegit = true;
+                }
+            }
+        }
     }
 
     const cards = articles.map((article) => {
@@ -199,20 +230,33 @@ async function getAmountVeri(address) {
     return veriAmount;
 }
 
-function RenderNFTsOwned({ address }) {
-    const [articles, setArticles] = useState([]);
+function RenderNFTsOwned({ articlesNFT, nostrPubKeyAuthorsNFT }) {
 
-    useEffect(() => {
-        getArticlesNFT(address).then(setArticles)
-    }, [address]);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthorsNFT,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articlesNFT.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articlesNFT[i].eventId === events[j].id) {
+                if (events[j].pubkey === articlesNFT[i].nostrPubKey) {
+                    articlesNFT[i].content = events[j].content;
+                    articlesNFT[i].isLegit = true;
+                }
+            }
+        }
     }
 
-    const cards = articles.map((article) => {
+    const cards = articlesNFT.map((articleNFT) => {
         return <div>
-        <CompactNFTVisualizer article={article}/>
+        <CompactNFTVisualizer article={articleNFT}/>
         </div>
     });
     return <div align='gird grid-row-1 place-items-center'>{cards}</div>
@@ -281,7 +325,36 @@ function UserProfile() {
         getMaximumBoost(address).then(setMaximumBoost)
     }, [address]);
 
-    const isLoading = address === undefined;
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
+    const [articles, setArticles] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticles(address).then(setArticles)
+    }, [address]);
+
+    const [nostrPubKeyAuthors, setNostrPubKeyAuthors] = useState(undefined);
+    useEffect(() => {
+        if (articles === undefined) return;
+        getNostrPubKeyAuthors(articles).then(setNostrPubKeyAuthors);
+    }, [articles]);
+
+    const [articlesNFT, setArticlesNFT] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticlesNFT(address).then(setArticlesNFT)
+    }, [address]);
+
+    const [nostrPubKeyAuthorsNFT, setNostrPubKeyAuthorsNFT] = useState(undefined);
+    useEffect(() => {
+        if (articlesNFT === undefined) return;
+        getNostrPubKeyAuthors(articlesNFT).then(setNostrPubKeyAuthorsNFT);
+    }, [articlesNFT]);
+ 
+    const isLoading = address === undefined || articles === undefined || nostrPubKeyAuthors === undefined || articlesNFT === undefined || nostrPubKeyAuthorsNFT === undefined;    
 
 
     return (
@@ -304,9 +377,9 @@ function UserProfile() {
                                 maximumBoost={Number(maximumBoost) * 10 ** -18}
                                 />
                                 <p className="text-2xl font-medium mx-20 mt-10">Claim Rewards</p> 
-                                <RenderCompactArticles address={address}/>  
+                                <RenderCompactArticles articles={articles} nostrPubKeyAuthors={nostrPubKeyAuthors}/>  
                                 <p className="text-2xl font-medium mx-20 mt-10">NFTs Owned</p>
-                                <RenderNFTsOwned address={address}/>                
+                                <RenderNFTsOwned articlesNFT={articlesNFT} nostrPubKeyAuthorsNFT={nostrPubKeyAuthorsNFT}/>                
                             </div> 
                             )
                     }
