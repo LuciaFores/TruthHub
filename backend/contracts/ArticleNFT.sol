@@ -7,6 +7,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 contract ArticleNFT is ERC1155, ERC1155Burnable, Ownable, ERC1155Supply {
+    /// Constructor of the contract, the NFT is initialized with the ipfs link of the logo
+    /// MODIFIER :
+    /// - none
+    /// INPUT :
+    /// - the address of the owner of the contract
+    /// OUTPUT :
+    /// - none
     constructor(
         address initialOwner
     )
@@ -15,6 +22,16 @@ contract ArticleNFT is ERC1155, ERC1155Burnable, Ownable, ERC1155Supply {
         )
         Ownable(initialOwner)
     {}
+
+    /// Function to mint a new NFT
+    /// MODIFIER :
+    /// - onlyOwner, the function can only be called by the owner of the contract
+    /// INPUT :
+    /// - the address of the account to which the NFT is minted
+    /// - the id of the NFT
+    /// - the amount of NFT minted and the data
+    /// OUTPUT :
+    /// - none
 
     function mint(
         address account,
@@ -25,6 +42,15 @@ contract ArticleNFT is ERC1155, ERC1155Burnable, Ownable, ERC1155Supply {
         _mint(account, id, amount, data);
     }
 
+    /// Function to mint a batch of new NFT
+    /// MODIFIER :
+    /// - onlyOwner, the function can only be called by the owner of the contract
+    /// INPUT :
+    /// - the address of the account to which the NFT is minted
+    /// - the ids of the NFT
+    /// - the amounts of NFT minted and the data
+    /// OUTPUT :
+    /// - none
     function mintBatch(
         address to,
         uint256[] memory ids,
@@ -34,8 +60,7 @@ contract ArticleNFT is ERC1155, ERC1155Burnable, Ownable, ERC1155Supply {
         _mintBatch(to, ids, amounts, data);
     }
 
-    // The following functions are overrides required by Solidity.
-
+    // The following function is override required by Solidity
     function _update(
         address from,
         address to,

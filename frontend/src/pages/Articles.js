@@ -4,6 +4,7 @@ import { TruthHubAbi, TruthHubAddress, VeriAbi, VeriAddress } from '../contracts
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
+import { useNostrEvents } from  "nostr-react"
 
 async function getEtherVotePrice(){
     let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -72,8 +73,8 @@ async function getArticleInfo(truthHubContractInstance, articleId) {
     let pubKey = await truthHubContractInstance.authors(author);
     let nostrPubKey = pubKey.slice(2);
     let vote = null;
-
-
+    let isLegit = false;
+    let content = "";
 
     return {
         articleId,
@@ -90,8 +91,11 @@ async function getArticleInfo(truthHubContractInstance, articleId) {
         ethersSpentInDownvotes,
         veriSpentInUpvotes,
         veriSpentInDownvotes,
+        nostrPubKey,
         pubKey,
-        vote
+        vote, 
+        isLegit,
+        content
     };
 }
 
@@ -111,30 +115,57 @@ async function getArticles(address) {
     votedArticles = votedArticles.map((x) => parseInt(x._hex, 16));
     publishedArticles = publishedArticles.map((x) => parseInt(x._hex, 16));
 
-
     for (let articleId = 1; articleId <= totalArticles; articleId++) {
-        const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
         const isVoteOpen = await truthHubContractInstance.isVoteOpen(articleId);
         
         // if the article is not in votedArticles
         if (isVoteOpen && !votedArticles.includes(articleId) && !publishedArticles.includes(articleId)) {
-            articles.push(articleInfo); 
+            const articleInfo = await getArticleInfo(truthHubContractInstance, articleId);
+            articles.push(articleInfo);
         }            
     }
+
     return articles;
 }
 
 
-function RenderArticles({ address, userVotePrice, userMaximumBoost }) {
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
-    const signer = provider.getSigner();
-    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+async function getNostrPubKeyAuthors(articles){
+    // create the set of all the nostrPubKeyAuthors of the articles
+    if(articles === undefined){
+        return undefined;
+    }
+    let nostrPubKeyAuthorsSet = new Set();
+    for(let i = 0; i < articles.length; i++){
+        nostrPubKeyAuthorsSet.add(articles[i].nostrPubKey);
+    }
+    // transform the set into an array
+    nostrPubKeyAuthorsSet = Array.from(nostrPubKeyAuthorsSet);
+    return nostrPubKeyAuthorsSet;
+}
 
-    const [articles, setArticles] = useState([]);
-    useEffect(() => {
-        getArticles(address).then(setArticles)
-    }, []);
+function RenderArticles({ articles, nostrPubKeyAuthors, userVotePrice, userMaximumBoost, veriTokenContractInstance }) {
+
+    const { events }  = useNostrEvents({
+            filter: {
+                authors: nostrPubKeyAuthors,
+                since: 0,
+                kinds: [1],
+            },
+    });
+
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articles.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articles[i].eventId === events[j].id) {
+                if (events[j].pubkey === articles[i].nostrPubKey) {
+                    articles[i].content = events[j].content;
+                    articles[i].isLegit = true;
+                }
+            }
+        }
+    }
 
     const cards = articles.map((article) => {
         return <div>
@@ -169,8 +200,30 @@ function Articles() {
     useEffect(() => {
         getUserMaximumBoost(address).then(setUserMaximumBoost);
     }, [address]);
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
+    const [articles, setArticles] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticles(address).then(setArticles)
+    }, [address]);
+
+    const [nostrPubKeyAuthors, setNostrPubKeyAuthors] = useState(undefined);
+    useEffect(() => {
+        if (articles === undefined) return;
+        getNostrPubKeyAuthors(articles).then(setNostrPubKeyAuthors);
+    }, [articles]);
+
+    console.log("Address ", address);
+    console.log("Articles ", articles);
+    console.log("NostrPubKeyAuthors ", nostrPubKeyAuthors);
  
-    const isLoading = address === undefined;     
+
+    const isLoading = address === undefined || articles === undefined || nostrPubKeyAuthors === undefined;     
 
     return (
         <div className='flex flex-col min-h-screen'>
@@ -192,7 +245,7 @@ function Articles() {
                                     By paying more ETH you won't increase your vote weight but you will have higher rewards at the end of the vote<br/>
                                     The vote for an article will close upon reaching the vote weight threshold {parseInt(Number(endWeightVote) * 10 ** -18)} or upon reaching the maximum block threshold
                                 </p>
-                                <RenderArticles address={address} userVotePrice={Number(userVotePrice) * 10 ** -18} userMaximumBoost={Number(userMaximumBoost) * 10 ** -18}/>
+                                <RenderArticles articles={articles} nostrPubKeyAuthors={nostrPubKeyAuthors} userVotePrice={Number(userVotePrice) * 10 ** -18} userMaximumBoost={Number(userMaximumBoost) * 10 ** -18} veriTokenContractInstance={veriTokenContractInstance}/>
                             </div>
                         </div>
                     )}                    
