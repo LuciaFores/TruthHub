@@ -847,7 +847,7 @@ contract TruthHub is IERC1155Receiver {
     // MODIFIER:
     /// - onlyAuthor: check if the user is an author
     /// INPUT:
-    /// - bytes32 eventId: id of the event
+    /// - bytes32 eventId: Nostr event id of the event
     /// OUTPUT:
     /// - uint256: id of the article
     function publishArticle(
@@ -876,9 +876,15 @@ contract TruthHub is IERC1155Receiver {
             0, // veriSpentInUpvotes
             0 // veriSpentInDownvotes
         );
+        // Since the author won't be able to vote for their own article
+        // we put the author both in the set of who upvoted it and downvoted it
+        // In this way we will be able to manage its reward (or purge) no matter
+        // what is the outcome of the vote
         articleIdToUpvotersAddresses[articleId].add(msg.sender);
         articleIdToDownvotersAddresses[articleId].add(msg.sender);
+        // We added the article to the set of the articles published by the author
         addressToArticlesPublished[msg.sender].add(articleId);
+        // Emit the event for the publication of the article
         emit PublishArticle(
             msg.sender,
             eventId,
@@ -911,6 +917,8 @@ contract TruthHub is IERC1155Receiver {
             tokenSpentToVote <= computeMaximumBoost(msg.sender),
             "Too many tokens spent to boost the vote"
         );
+        // In case of vote boosted with the VERI tokens we do an ERC-20 transfer
+        // of the specified amount of tokens from the user to the contract
         if (tokenSpentToVote > 0) {
             contractVeriToken.transferFrom(
                 msg.sender,
@@ -918,36 +926,59 @@ contract TruthHub is IERC1155Receiver {
                 tokenSpentToVote
             );
         }
+        // Since the vote could be the first one for the reader
+        // meaning that this could be the first interaction of the reader with the
+        // protocol, we initialize the reputation of the reader to 51
+        // If the reader reputation is different from 0 this action doesn't take place
         _setReaderReputation(msg.sender);
         uint8 reputation = getReaderReputation(msg.sender);
+        // If the reader upvoted the article
         if (voteExpressed) {
+            // Update the upvotes weight by adding the weight of the new vote
             articles[articleId].upvotes += computeVoteWeight(
                 reputation,
                 tokenSpentToVote
             );
+            // Update the number of upvoters by adding 1
             articles[articleId].upvoters += 1;
+            // Add the article to the set of articles upvoted by the reader
             articleIdToUpvotersAddresses[articleId].add(msg.sender);
+            // Save the amount of ether that the user spent to upvote the specific article
             articleIdToEtherSpentToUpvote[articleId][msg.sender] = msg.value;
+            // Update the total amount of ether spent to upvote the article
             articles[articleId].ethersSpentInUpvotes += msg.value;
+            // Save the amount of tokens that the user spent to upvote the specific article
             articleIdToVeriSpentToUpvote[articleId][
                 msg.sender
             ] += tokenSpentToVote;
+            // Update the total amount of tokens spent to upvote the article
             articles[articleId].veriSpentInUpvotes += tokenSpentToVote;
-        } else {
+        }
+        // If the reader downvoted the article
+        else {
+            // Update the downvotes weight by adding the weight of the new vote
             articles[articleId].downvotes += computeVoteWeight(
                 reputation,
                 tokenSpentToVote
             );
+            // Update the number of downvoters by adding 1
             articles[articleId].downvoters += 1;
+            // Add the article to the set of articles downvoted by the reader
             articleIdToDownvotersAddresses[articleId].add(msg.sender);
+            // Save the amount of ether that the user spent to downvote the specific article
             articleIdToEtherSpentToDownvote[articleId][msg.sender] = msg.value;
+            // Update the total amount of ether spent to downvote the article
             articles[articleId].ethersSpentInDownvotes += msg.value;
+            // Save the amount of tokens that the user spent to downvote the specific article
             articleIdToVeriSpentToDownvote[articleId][
                 msg.sender
             ] += tokenSpentToVote;
+            // Update the total amount of tokens spent to downvote the article
             articles[articleId].veriSpentInDownvotes += tokenSpentToVote;
         }
+        // Add the article to the set of article that the user voted
         addressToArticlesVoted[msg.sender].add(articleId);
+        // Emit the event for the vote
         emit Vote(
             msg.sender,
             articleId,
@@ -958,6 +989,16 @@ contract TruthHub is IERC1155Receiver {
         );
     }
 
+    /// The following function is to update within the desired limits
+    /// the reader reputation meaning that if the reputation goes above
+    /// 101 it remains 101 and if it goes below 1 it remains 1
+    /// MODIFIER:
+    /// - none
+    /// INPUT:
+    /// - address user: address of the user
+    /// - bool direction: true if the reputation must be increased, false otherwise
+    /// OUTPUT:
+    /// - none
     function updateReaderReputation(address user, bool direction) internal {
         if (direction) {
             if (readersReputations[user] < 101) {
@@ -970,6 +1011,16 @@ contract TruthHub is IERC1155Receiver {
         }
     }
 
+    /// The following function is to update within the desired limits
+    /// the author reputation meaning that if the reputation goes above
+    /// 101 it remains 101 and if it goes below 1 it remains 1
+    /// MODIFIER:
+    /// - none
+    /// INPUT:
+    /// - address user: address of the user
+    /// - bool direction: true if the reputation must be increased, false otherwise
+    /// OUTPUT:
+    /// - none
     function updateAuthorReputation(address user, bool direction) internal {
         if (direction) {
             if (authorsReputations[user] < 101) {
@@ -994,29 +1045,47 @@ contract TruthHub is IERC1155Receiver {
     /// 3. If the number of upvotes is greater then the number of downvotes, the users that expressed an upvote
     /// get back the ether spent to express the vote and an amount of platform tokens proportional to how much ether
     /// has been spent to express the vote; the users that expressed a downvote loose the ether spent to express the vote
-    /// and their reputation is lowered by 1
+    /// and their reputation is lowered by 1.
+    /// The users who upvoted the article takes also an amount of tokens proportional to the number of users that they
+    /// purged from the minority
     /// 4. If the number of downvotes is greater then the number of upvotes, the users that expressed a downvote
     /// get back the ether spent to express the vote and an amount of platform tokens proportional to how much ether
     /// has been spent to express the vote and a proportional part of the ethers collected among the upvotes and the ethers
     /// spent to publish the article; the users that expressed an upvote loose the ether spent to express the vote
-    /// and their reputation is lowered by 1
+    /// and their reputation is lowered by 1.
+    /// The users who downvoted the article takes also an amount of tokens proportional to the number of users that they
+    /// purged from the minority
+    /// 5. If the number of upvotes is equal to the number of downvotes, everyone gets back the ether spent
+    /// to express the vote or to publish the article and the reputation is not modified
+    /// MODIFIER:
+    /// - validClaimer: check if the user has the possibility to claim a reward
+    /// - voteClosed: check if the vote is closed
+    /// INPUT:
+    /// - uint256 articleId: id of the article
+    /// OUTPUT:
+    /// - none
     function claimReward(
         uint256 articleId
     ) external validClaimer(articleId) voteClosed(articleId) {
+        // Variables needed to compute the reward
         uint256 etherAmount;
         uint256 tokenAmountToMint;
         uint256 tokenAmountToGiveBack;
         uint256 additionalTokenAmountToMint;
         uint256 additionalTokenAmountToGiveBack;
         // No majority
+        // The user get back only thier stake, the reputation is not modified
         if (articles[articleId].upvotes == articles[articleId].downvotes) {
-            // The user get back only thier stake, the reputation is not modified
+            // AUTHOR
             if (articles[articleId].author == msg.sender) {
                 // The author gets back the amount paid to publish the article
                 etherAmount = articles[articleId].etherSpentToPublish;
-            } else {
+            }
+            // VOTERS (READERS)
+            else {
                 // The readers get back the amount paid to vote
-                // The sum is exactly equal to the amount paied because the user will have a value different from 0 only in one of the two mappings
+                // The sum is exactly equal to the amount paied because the user
+                // will have a value different from 0 only in one of the two mappings
                 etherAmount =
                     articleIdToEtherSpentToUpvote[articleId][msg.sender] +
                     articleIdToEtherSpentToDownvote[articleId][msg.sender];
@@ -1024,6 +1093,7 @@ contract TruthHub is IERC1155Receiver {
                     articleIdToVeriSpentToUpvote[articleId][msg.sender] +
                     articleIdToVeriSpentToDownvote[articleId][msg.sender];
             }
+            // There are no tokens to be minted as reward
             tokenAmountToMint = 0;
         }
         // MAJORITY -> UPVOTES
@@ -1041,10 +1111,11 @@ contract TruthHub is IERC1155Receiver {
                 );
                 // The reputation of the author is increased by 1
                 updateAuthorReputation(msg.sender, true);
-            } else {
-                // VOTERS (READERS)
-                // The voters, who are by construction in the majority or else they would not be validClaimer, will get back the amount
-                // of ether spent to vote and an amount of platform tokens proportional to how much they spent
+            }
+            // VOTERS (READERS)
+            // The voters, who are by construction in the majority or else they would not be validClaimer, will get back the amount
+            // of ether spent to vote and an amount of platform tokens proportional to how much they spent
+            else {
                 etherAmount = articleIdToEtherSpentToUpvote[articleId][
                     msg.sender
                 ];
@@ -1052,6 +1123,7 @@ contract TruthHub is IERC1155Receiver {
                     articleIdToEtherSpentToUpvote[articleId][msg.sender],
                     multiplierVeriPerEther
                 );
+                // They will also get back the amount of VERI spent to boost the vote
                 tokenAmountToGiveBack = articleIdToVeriSpentToUpvote[articleId][
                     msg.sender
                 ];
@@ -1068,10 +1140,13 @@ contract TruthHub is IERC1155Receiver {
                 minorityUsers,
                 majorityUsers
             );
+            // Compute the proportional amount of tokens spent by the minority to be give
+            // back to the user in the majority
             (, additionalTokenAmountToGiveBack) = Math.tryDiv(
                 articles[articleId].veriSpentInDownvotes,
                 articles[articleId].upvoters
             );
+            // Purge the part of the minority requested to be purged by the user
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToDownvotersAddresses[articleId],
@@ -1087,11 +1162,11 @@ contract TruthHub is IERC1155Receiver {
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
             articleIdToUpvotersAddresses[articleId].remove(msg.sender);
+            // Compute the amount of reward token for the purge
             (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
-            tokenAmountToMint += additionalTokenAmountToMint;
         }
         // MAJORITY -> DOWNVOTES
         // Update author reputation in a negative way
@@ -1107,6 +1182,7 @@ contract TruthHub is IERC1155Receiver {
                 articleIdToEtherSpentToDownvote[articleId][msg.sender],
                 multiplierVeriPerEther
             );
+            // Retrieve the amount of tokens spent to boost the vote in order to give them back to the user
             tokenAmountToGiveBack = articleIdToVeriSpentToDownvote[articleId][
                 msg.sender
             ];
@@ -1121,10 +1197,13 @@ contract TruthHub is IERC1155Receiver {
                 minorityUsers,
                 majorityUsers
             );
+            // Compute the proportional amount of tokens spent by the minority to be give
+            // back to the user in the majority
             (, additionalTokenAmountToGiveBack) = Math.tryDiv(
                 articles[articleId].veriSpentInUpvotes,
                 articles[articleId].downvoters
             );
+            // Purge the part of the minority requested to be purged by the user
             for (uint256 i = 0; i < addressesToPurge; i++) {
                 address userToPurge = EnumerableSet.at(
                     articleIdToUpvotersAddresses[articleId],
@@ -1142,22 +1221,27 @@ contract TruthHub is IERC1155Receiver {
             }
             // In order to compute in the future the amount of eligible people to update the reputation of the minority
             articleIdToDownvotersAddresses[articleId].remove(msg.sender);
+            // Compute the amount of reward token for the purge
             (, additionalTokenAmountToMint) = Math.tryMul(
                 addressesToPurge,
                 amountVeriPerUserPurged
             );
         }
+        // Transfer the ether to the user
         Address.sendValue(payable(msg.sender), etherAmount);
+        // Mint the token to the user
         contractVeriToken.mint(
             msg.sender,
             tokenAmountToMint + additionalTokenAmountToMint
         );
+        // Give back the token to the user
         if (tokenAmountToGiveBack > 0) {
             contractVeriToken.transfer(
                 msg.sender,
                 tokenAmountToGiveBack + additionalTokenAmountToGiveBack
             );
         }
+        // Emit the event for the claim of the reward
         emit ClaimReward(
             msg.sender,
             articleId,
@@ -1169,8 +1253,15 @@ contract TruthHub is IERC1155Receiver {
         );
     }
 
-    /// This function is callable by only the best authors of the platform and let them the possibility
-    /// to mint a specific amount of nft for one of their best articles
+    /// This function is used to mint a specific amount of article NFTs
+    /// MODIFIER :
+    /// - onlyBestAuthors: check if the user is a Best Author
+    /// - onlyBestArticles: check if the article is a Best Article
+    /// INPUT:
+    /// - uint256 articleId: id of the article
+    /// - uint256 nftAmount: amount of NFTs to be minted
+    /// OUTPUT:
+    /// - none
     function mintArticleNFT(
         uint256 articleId,
         uint256 nftAmount
@@ -1188,6 +1279,14 @@ contract TruthHub is IERC1155Receiver {
         emit MintArticleNFT(msg.sender, articleId, nftAmount);
     }
 
+    /// This function is used to buy a specific amount of article NFTs
+    /// MODIFIER :
+    /// - none
+    /// INPUT:
+    /// - uint256 articleId: id of the article
+    /// - uint256 nftAmount: amount of NFTs to be bought
+    /// OUTPUT:
+    /// - none
     function buyArticleNFT(
         uint256 articleId,
         uint256 nftAmount
