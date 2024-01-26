@@ -1,17 +1,62 @@
 import { useEffect, useState } from "react";
-import { useConnectionStatus, useAddress, useContract, useContractRead } from "@thirdweb-dev/react";
+import { useConnectionStatus, useAddress } from "@thirdweb-dev/react";
 import { TruthHubAddress, TruthHubAbi, VeriAddress, VeriAbi, ArticleNFTAbi, ArticleNFTAddress } from '../contracts.js';
 import ClaimReward from "../components/ClaimRewardButton";
 import UserTableInformations from "../components/UserTableInformations";
 import CompactArticleVisualizer from "../components/CompactArticleVisualizer";
 import CompactNFTVisualizer from "../components/CompactNFTVisualizer";
 import { ethers } from "ethers";
+import { useNostrEvents } from  "nostr-react"
 
-// 1000000000000000 -> 0.0001
-// 1000000000000000 
+async function getAuthorReputation(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let authorReputation = undefined;
+    if(address !== undefined){
+        authorReputation = await truthHubContractInstance.getAuthorReputation(address);
+    }
+    return authorReputation;
+}
 
-// 1000000000000000
+async function getReaderReputation(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let readerReputation = undefined;
+    if(address !== undefined){
+        readerReputation = await truthHubContractInstance.getReaderReputation(address);
+    }
+    return readerReputation;
+}
 
+async function getPublishPrice(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let publishPrice = undefined;
+    if(address !== undefined){
+        publishPrice = await truthHubContractInstance.computePublishPrice(address);
+    }
+    return publishPrice;
+}
+
+async function getVotePrice(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let votePrice = undefined;
+    if(address !== undefined){
+        votePrice = await truthHubContractInstance.computeVotePrice(address);
+    }
+    return votePrice;
+}
+
+async function getMaximumBoost(address){
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    let maximumBoost = undefined;
+    if(address !== undefined){
+        maximumBoost = await truthHubContractInstance.computeMaximumBoost(address);
+    }
+    return maximumBoost;
+}
 
 async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) {
 
@@ -46,6 +91,8 @@ async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) 
 
     let pubKey = await truthHubContractInstance.authors(author);
     let nostrPubKey = pubKey.slice(2);
+    let isLegit = false;
+    let content = "";
 
 
 
@@ -65,7 +112,10 @@ async function getArticleInfo(truthHubContractInstance, articleId, isClaimable) 
         veriSpentInUpvotes,
         veriSpentInDownvotes,
         pubKey,
-        isClaimable
+        nostrPubKey,
+        isClaimable,
+        isLegit,
+        content
     };
 }
 
@@ -101,22 +151,47 @@ async function getArticles(address) {
     return articles;
 }
 
+async function getNostrPubKeyAuthors(articles){
+    // create the set of all the nostrPubKeyAuthors of the articles
+    if(articles === undefined){
+        return undefined;
+    }
+    let nostrPubKeyAuthorsSet = new Set();
+    for(let i = 0; i < articles.length; i++){
+        nostrPubKeyAuthorsSet.add(articles[i].nostrPubKey);
+    }
+    // transform the set into an array
+    nostrPubKeyAuthorsSet = Array.from(nostrPubKeyAuthorsSet);
+    return nostrPubKeyAuthorsSet;
+}
 
-function RenderCompactArticles({ address }) {
-    const [articles, setArticles] = useState([]);
-
+function RenderCompactArticles({ articles, nostrPubKeyAuthors }) {
     const [articleIdValue, setArticleIdValue] = useState('');
 
     const handleArticleIdChange = (e) => {
         setArticleIdValue(e.target.value);
     };
 
-    useEffect(() => {
-        getArticles(address).then(setArticles)
-    }, [address]);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthors,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articles.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articles[i].eventId === events[j].id) {
+                if (events[j].pubkey === articles[i].nostrPubKey) {
+                    articles[i].content = events[j].content;
+                    articles[i].isLegit = true;
+                }
+            }
+        }
     }
 
     const cards = articles.map((article) => {
@@ -155,24 +230,39 @@ async function getAmountVeri(address) {
     return veriAmount;
 }
 
-function RenderNFTsOwned({ address }) {
-    const [articles, setArticles] = useState([]);
+function RenderNFTsOwned({ articlesNFT, nostrPubKeyAuthorsNFT }) {
 
-    useEffect(() => {
-        getArticlesNFT(address).then(setArticles)
-    }, [address]);
+    const { events }  = useNostrEvents({
+        filter: {
+            authors: nostrPubKeyAuthorsNFT,
+            since: 0,
+            kinds: [1],
+        },
+    });
 
-    if (articles.length === 0) {
-        return <div></div>
+    // check if events is empty array
+    if (events.length === 0) return <></>
+
+    for (let i = 0; i < articlesNFT.length; i++) {
+        for (let j = 0; j < events.length; j++) {
+            if (articlesNFT[i].eventId === events[j].id) {
+                if (events[j].pubkey === articlesNFT[i].nostrPubKey) {
+                    articlesNFT[i].content = events[j].content;
+                    articlesNFT[i].isLegit = true;
+                }
+            }
+        }
     }
 
-    const cards = articles.map((article) => {
+    const cards = articlesNFT.map((articleNFT) => {
         return <div>
-        <CompactNFTVisualizer article={article}/>
+        <CompactNFTVisualizer article={articleNFT}/>
         </div>
     });
     return <div align='gird grid-row-1 place-items-center'>{cards}</div>
 }
+
+
 
 async function getArticlesNFT(address) {
     // Connect to the network
@@ -200,6 +290,9 @@ async function getArticlesNFT(address) {
 }
 
 function UserProfile() {
+    const connectionStatus = useConnectionStatus();
+    const isWalletConnected = connectionStatus === "connected";
+
     const address = useAddress();
 
     const [amountVeri, setAmountVeri] = useState(0);
@@ -207,18 +300,61 @@ function UserProfile() {
         getAmountVeri(address).then(setAmountVeri)
     }, [address]);
 
-    const { contract } = useContract(TruthHubAddress);
+    const [authorReputation, setAuthorReputation] = useState(undefined);
+    useEffect(() => {
+        getAuthorReputation(address).then(setAuthorReputation)
+    }, [address]);
 
-    const connectionStatus = useConnectionStatus();
-    const isWalletConnected = connectionStatus === "connected";
+    const [readerReputation, setReaderReputation] = useState(undefined);
+    useEffect(() => {
+        getReaderReputation(address).then(setReaderReputation)
+    }, [address]);
 
-    const {data: aR, isLoading: isLoadingAR} = useContractRead(contract, "getAuthorReputation", [address]);
-    const {data: rR, isLoading: isLoadingrR} = useContractRead(contract, "getReaderReputation", [address]);
-    const {data: pP, isLoading: isLoadingPP} = useContractRead(contract, "computePublishPrice", [address]);
-    const {data: vP, isLoading: isLoadingVP} = useContractRead(contract, "computeVotePrice", [address]);
-    const {data: mB, isLoading: isLoadingMB} = useContractRead(contract, "computeMaximumBoost", [address]);
+    const [publishPrice, setPublishPrice] = useState(undefined);
+    useEffect(() => {
+        getPublishPrice(address).then(setPublishPrice)
+    }, [address]);
 
-    const isLoadingAll = (isLoadingAR || isLoadingrR || isLoadingPP || isLoadingVP || isLoadingMB);
+    const [votePrice, setVotePrice] = useState(undefined);
+    useEffect(() => {
+        getVotePrice(address).then(setVotePrice)
+    }, [address]);
+
+    const [maximumBoost, setMaximumBoost] = useState(undefined);
+    useEffect(() => {
+        getMaximumBoost(address).then(setMaximumBoost)
+    }, [address]);
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    let veriTokenContractInstance = new ethers.Contract(VeriAddress, VeriAbi, provider);
+    const signer = provider.getSigner();
+    veriTokenContractInstance = veriTokenContractInstance.connect(signer);
+
+    const [articles, setArticles] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticles(address).then(setArticles)
+    }, [address]);
+
+    const [nostrPubKeyAuthors, setNostrPubKeyAuthors] = useState(undefined);
+    useEffect(() => {
+        if (articles === undefined) return;
+        getNostrPubKeyAuthors(articles).then(setNostrPubKeyAuthors);
+    }, [articles]);
+
+    const [articlesNFT, setArticlesNFT] = useState(undefined);
+    useEffect(() => {
+        if (address === undefined) return;
+        getArticlesNFT(address).then(setArticlesNFT)
+    }, [address]);
+
+    const [nostrPubKeyAuthorsNFT, setNostrPubKeyAuthorsNFT] = useState(undefined);
+    useEffect(() => {
+        if (articlesNFT === undefined) return;
+        getNostrPubKeyAuthors(articlesNFT).then(setNostrPubKeyAuthorsNFT);
+    }, [articlesNFT]);
+ 
+    const isLoading = address === undefined || articles === undefined || nostrPubKeyAuthors === undefined || articlesNFT === undefined || nostrPubKeyAuthorsNFT === undefined;    
 
 
     return (
@@ -226,7 +362,7 @@ function UserProfile() {
             {isWalletConnected ? (
                 <div>
                     {
-                        isLoadingAll && address === undefined ? (
+                        isLoading ? (
                             <p className="flex text-4xl font-medium mx-auto mt-10">Loading Profile Page...</p>
                             ):(
                             <div className="grid grid-rows-8">
@@ -234,16 +370,16 @@ function UserProfile() {
                                 <p className="text-2xl font-medium mx-20 mt-10">User Statistics</p>
                                 <UserTableInformations
                                 amountVeri={Number(amountVeri) * 10 ** -18}
-                                authorReputation={aR}
-                                readerReputation={rR}
-                                publishPrice={Number(pP) * 10 ** -18}
-                                votePrice={Number(vP) * 10 ** -18}
-                                maximumBoost={Number(mB) * 10 ** -18}
+                                authorReputation={authorReputation}
+                                readerReputation={readerReputation}
+                                publishPrice={Number(publishPrice) * 10 ** -18}
+                                votePrice={Number(votePrice) * 10 ** -18}
+                                maximumBoost={Number(maximumBoost) * 10 ** -18}
                                 />
                                 <p className="text-2xl font-medium mx-20 mt-10">Claim Rewards</p> 
-                                <RenderCompactArticles address={address}/>  
+                                <RenderCompactArticles articles={articles} nostrPubKeyAuthors={nostrPubKeyAuthors}/>  
                                 <p className="text-2xl font-medium mx-20 mt-10">NFTs Owned</p>
-                                <RenderNFTsOwned address={address}/>                
+                                <RenderNFTsOwned articlesNFT={articlesNFT} nostrPubKeyAuthorsNFT={nostrPubKeyAuthorsNFT}/>                
                             </div> 
                             )
                     }

@@ -78,7 +78,20 @@ export default function ArticleVisualizer({ article, userVotePrice, userMaximumB
                                 <p className="text-l mx-4">Event Id: {article.eventId}</p>
                                 <p className="text-l mx-4">Article Id: {article.articleId}</p>
                             </span>
-                            <span>Da aggiungere contenuto</span>
+                            <span>{article.isLegit ? (
+                                article.content
+                            ) : (
+                                <div>
+                                    <div className="card w-96 bg-error text-error-content">
+                                        <div className="card-body items-center text-center">
+                                            <h2 className="card-title">Article Not Legit!</h2>
+                                            <p>Article content not displayed due to mismatch between
+                                                Nostr PubKey of who published the article and Nostr
+                                                PubKey of original author on Nostr</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}</span>
                         </div>
                     </div>                           
                 </div>

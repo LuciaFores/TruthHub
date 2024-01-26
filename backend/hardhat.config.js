@@ -12,7 +12,7 @@ const ALCHEMY_API_KEY = "hg19U6MTgcw_qgtPAKyqNbxMmT-iGg2I";
 // Beware: NEVER put real Ether into testing accounts
 const SEPOLIA_PRIVATE_KEY = "d46693a7cde8f114885bf0e8de08c830023f0c5a777bb4f08bb3a84deeb9bdf6";
 
-const ETHERSCAN_API_KEY = "PMZ7FPESZ3JW6TBXAP71HGHZF7BW9YV2MZ";
+const ETHERSCAN_API_KEY = "6E44XH27GJNTBV7UHRGVTKWMMA5FN79R9C";
 
 module.exports = {
   solidity: {

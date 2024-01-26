@@ -14,6 +14,10 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 const relayUrls = [
 	"wss://relay.damus.io",
+	"wss://nostr.hubmaker.io/",
+	"wss://nostr.hifish.org/",
+	"wss://nostr.wine/",
+	
   ];
 
 root.render(

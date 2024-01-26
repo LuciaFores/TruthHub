@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/ArticleNFT.sol": {
-      "lastModificationDate": 1704480750446,
-      "contentHash": "975324dba5ca124aa8d00b8d7878765c",
+      "lastModificationDate": 1706202690105,
+      "contentHash": "ee509a666b66fe195c06d190c147bd1a",
       "sourceName": "contracts/ArticleNFT.sol",
       "solcConfig": {
         "version": "0.8.22",
@@ -574,8 +574,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/TruthHub.sol": {
-      "lastModificationDate": 1705954091660,
-      "contentHash": "03581b5dc59da4ca13ac7861d2f718f8",
+      "lastModificationDate": 1706264539284,
+      "contentHash": "7a03610daba33ae0f2c22567ec3805e1",
       "sourceName": "contracts/TruthHub.sol",
       "solcConfig": {
         "version": "0.8.22",
@@ -617,8 +617,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/VeriToken.sol": {
-      "lastModificationDate": 1704480764486,
-      "contentHash": "58bc651a8dcd1bf446564dbd87503560",
+      "lastModificationDate": 1706202743602,
+      "contentHash": "6a9e8a5dfe3d69d4b638fbbfadfa6aa0",
       "sourceName": "contracts/VeriToken.sol",
       "solcConfig": {
         "version": "0.8.22",
@@ -1261,8 +1261,8 @@
       ]
     },
     "/home/lucietti/Documenti/GitHub/TruthHub/backend/contracts/TruthHubDemo.sol": {
-      "lastModificationDate": 1705954054739,
-      "contentHash": "0d9df2ed10f0c377e883e4b87dfd405f",
+      "lastModificationDate": 1706264537560,
+      "contentHash": "506313f563db727ead081d452dab21b9",
       "sourceName": "contracts/TruthHubDemo.sol",
       "solcConfig": {
         "version": "0.8.22",

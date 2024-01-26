@@ -201,6 +201,71 @@ function App() {
     "wss://nostr.wine/"
   ]
 }
+
+{
+  "id": "f237bf0a1266ece0e2bb70793eca9056dbbfd38eca2ea599ae10827c0bc9956d",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1705766824,
+  "content": "non sono di 0xa96Ec6C037eAFD611AB503EE7550EA17577f8381 ma sono di 0x7F3D8af22294C930B58E3987202F27CBEfbe76E6",
+  "tags": [],
+  "sig": "a52391bb3cfb65cb754aa5eed8594e02c3eeed3353c501dd7f5ee7ede8c45c4ef4dffb33c2d45870f91b408ecb0bdaf820b303895a6563b3f7cbb17407a8bc94",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
+
+{
+  "id": "96ee63ae7d88bc0f4a4ce01136a87d311f48a3dabc12faeafbbef3e3a16f9dcd",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1705743160,
+  "content": "prova pagamento",
+  "tags": [],
+  "sig": "9e57f1bf4f09e50164231d3fc4d9418c182334b5e7ff5ed5e5b9a6f19b5aeac4b879b33f4103651a7556d9aa35d99784953b479319894a25f90563ba060fc962",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
+
+{
+  "id": "4d725a9a382e79abda0e62cda8802e0933ede3f1271daedc14b329d02254489e",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1705579365,
+  "content": "prova onSuccess",
+  "tags": [],
+  "sig": "c6a900e687b7d4f9e2c387274990a2fd36bb7cc44058b941b5ab09d954fb7ccf1f1ae0d28ef7a0ac629709288ea5b23f0672d3d42bfa9f1b762514d4dc28e13c",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
+
+{
+  "id": "5a8bbede8bcbeb1df4fe7d3da82a3d54850209d82164e9c297fa3a712303e42e",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1706266925,
+  "content": "I became a good author",
+  "tags": [],
+  "sig": "1ed85cf6d9cda8128f7632d0e864af6cd16b561b98f1f060d4ff00eec06373b2b274adbd1caa775d1bdab39bdffdf6df4bc5f2b214cdb2b365584a073b139b9f",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
+
+{
+  "id": "5dd209b34ab91355f0319865da5e8ff05c8c9b8872a20f7304c1836705f400d4",
+  "kind": 1,
+  "pubkey": "9b60c3d36e7b2bf1836b7950a2aeab1652f7bcc487b41a236b210a0713894867",
+  "created_at": 1706266935,
+  "content": "Final try",
+  "tags": [],
+  "sig": "20f03178187d1210cb8195286fc969d2c4554adeb89600ae8c0cdc27eacddc764f91067ec8194d1d8bb8a7ba1b565dfdb6ae5cea5d7d99f97089ae62ca3d93ed",
+  "relays": [
+    "wss://nostr.hubmaker.io/"
+  ]
+}
 */
 
 export default App;

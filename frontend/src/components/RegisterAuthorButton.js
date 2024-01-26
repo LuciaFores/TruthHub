@@ -1,6 +1,7 @@
 import { Web3Button } from "@thirdweb-dev/react";
 import converter from "bech32-converting";
 import { TruthHubAddress, TruthHubAbi } from "../contracts.js";
+import { ethers } from "ethers";
 
 export default function RegisterAuthorButton({signature, nostrPublicKey}) {
     
@@ -8,15 +9,18 @@ export default function RegisterAuthorButton({signature, nostrPublicKey}) {
         return converter(prefix).toHex(str);
     }
 
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let truthHubContractInstance = new ethers.Contract(TruthHubAddress, TruthHubAbi, provider);
+    const signer = provider.getSigner();
+    truthHubContractInstance = truthHubContractInstance.connect(signer);
+
     return(
-        // The Web3Button takes care of the connection to the blockchain and the transaction signing.
-        // It only needs to know which contract must contact (the contract address) and the contract ABI
-        // Then once clicked it will perform the action specified in the action prop.
         <Web3Button
         contractAddress={TruthHubAddress}
         contractAbi={TruthHubAbi}
-        action={async (contract) => {
-            await contract.call("registerAuthor", [bech32ToHex(signature, 'npub'), bech32ToHex(nostrPublicKey, 'npub')]);
+        action={async () => {
+            const registerTransaction = await truthHubContractInstance.registerAuthor(bech32ToHex(signature, 'npub'), bech32ToHex(nostrPublicKey, 'npub'));
+            await registerTransaction.wait();
         }}
         onError={(error) => alert(error)}
         >
