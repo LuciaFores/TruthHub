@@ -698,10 +698,10 @@ contract TruthHubDemo is IERC1155Receiver {
     /// The following function is used to register a new author
     /// In order to do that the cryptohgraphic proof must be valid
     /// The idea is the following:
-    /// 1. The user sends a transaction to the contract containing their Nostr address encrypted
+    /// 1. The user sends a transaction to the contract containing their Ethereum address encrypted
     /// with Schnorr cryptography thanks to the Nostr Public Key; it also send their Nostr public key
-    /// 2. The function decrypts the Nostr address using the public key
-    /// 3. The function checks if the decrypted public key is the same as the Nostr public key
+    /// 2. The function decrypts the Ethereum address using the public key
+    /// 3. The function checks if the decrypted address is the same as the msg.sender address
     /// This encryption is needed in order to avoid possible spoofing attacks: if the encryption
     /// is not used in fact it may happen that an attacker, while reading the pending transaction in the mempool,
     /// may copy the transaction and let the transaction be mined before the original one, thus registering themselves
