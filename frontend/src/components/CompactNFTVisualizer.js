@@ -14,8 +14,8 @@ function ModalArticle({article}){
             <p> <span className="font-bold">Author (Nostr address):</span> {converter('npub').toBech32(article.pubKey)}</p>
             <p> <span className="font-bold">Author (Ethereum address):</span> {article.author}</p>
             <p className="pb-4"> <span className="font-bold">Event Id:</span> {article.eventId}</p>
-            <p><span className="font-bold">Upvotes weights:</span> {parseInt(article.upvotes * 10**-18)}</p>
-            <p><span className="font-bold">Downvotes weights:</span> {parseInt(article.downvotes * 10**-18)}</p>
+            <p><span className="font-bold">Upvotes weights:</span> {parseFloat(article.upvotes * 10**-18)}</p>
+            <p><span className="font-bold">Downvotes weights:</span> {parseFloat(article.downvotes * 10**-18)}</p>
             <p><span className="font-bold">Upvoters:</span> {article.upvoters}</p>
             <p><span className="font-bold">Downvoters:</span> {article.downvoters}</p>
             <p><span className="font-bold">Ethers spent to publish:</span> {article.etherSpentToPublish * 10**-18}</p>
@@ -37,7 +37,8 @@ function ModalArticle({article}){
                         <div className="card-body items-center text-center">
                             <h2 className="card-title">Article Not Legit!</h2>
                             <p>Article content not displayed due to mismatch between
-                                who published the article and Nostr PubKey of original author on Nostr</p>
+                                Nostr PubKey of who published the article and Nostr
+                                PubKey of original author on Nostr</p>
                         </div>
                     </div>
                 </div>

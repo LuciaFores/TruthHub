@@ -86,7 +86,8 @@ export default function ArticleVisualizer({ article, userVotePrice, userMaximumB
                                         <div className="card-body items-center text-center">
                                             <h2 className="card-title">Article Not Legit!</h2>
                                             <p>Article content not displayed due to mismatch between
-                                                who published the article and Nostr PubKey of original author on Nostr</p>
+                                                Nostr PubKey of who published the article and Nostr
+                                                PubKey of original author on Nostr</p>
                                         </div>
                                     </div>
                                 </div>

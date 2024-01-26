@@ -76,7 +76,6 @@ export const ArticleNFTAbi = [
 ]
 
 export const TruthHubAbi = [
-  [
     {
       "inputs": [
         {
@@ -1082,5 +1081,4 @@ export const TruthHubAbi = [
       "stateMutability": "payable",
       "type": "receive"
     }
-  ]
 ];
